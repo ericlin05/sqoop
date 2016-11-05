@@ -22,7 +22,7 @@ import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Time;
+import org.apache.sqoop.lib.Time;
 import java.sql.Timestamp;
 
 import org.apache.hadoop.io.BytesWritable;
@@ -102,8 +102,18 @@ public final class JdbcWritableBridge {
     }
   }
 
+  /**
+   * getTime function from ResultSet class returns java.sql.Time object,
+   * we need to convert it to org.apache.sqoop.lib.Time
+   *
+   * @param colNum int
+   * @param r ResultSet
+   * @return org.apache.sqoop.lib.Time
+   * @throws SQLException
+   */
   public static Time readTime(int colNum, ResultSet r) throws SQLException {
-    return r.getTime(colNum);
+    java.sql.Time t = r.getTime(colNum);
+    return new Time(t.getTime());
   }
 
   public static Timestamp readTimestamp(int colNum, ResultSet r)
