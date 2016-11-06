@@ -236,13 +236,16 @@ public class CompilationManager {
         }
       }
       try {
-          FileUtils.moveFile(fOrig, fDest);
+        LOG.debug("moving file from " + fOrig.getAbsolutePath() + " to " + fDest.getAbsolutePath());
+        FileUtils.moveFile(fOrig, fDest);
+        // SQOOP-3042 - need to clean the file on exit
+        fDest.deleteOnExit();
       } catch (IOException e) {
-    	  /*Removed the exception being thrown
-    	   *even if the .java file can not be renamed
-    	   *or can not be moved a "dest" directory for
-    	   *any reason.*/
-          LOG.debug("Could not rename " + orig + " to " + dest); 
+        /*Removed the exception being thrown
+         *even if the .java file can not be renamed
+         *or can not be moved a "dest" directory for
+         *any reason.*/
+        LOG.error("Could not rename " + orig + " to " + dest + ". Error: " + e.getMessage());
       }
     }
   }
