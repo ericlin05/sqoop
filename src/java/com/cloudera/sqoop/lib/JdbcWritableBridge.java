@@ -22,7 +22,7 @@ import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import org.apache.sqoop.lib.Time;
+import org.apache.sqoop.orm.Time;
 import java.sql.Timestamp;
 
 import org.apache.hadoop.io.BytesWritable;

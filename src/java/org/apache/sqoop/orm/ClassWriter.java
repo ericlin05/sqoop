@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -409,7 +409,7 @@ public class ClassWriter {
     } else if (javaType.equals("java.sql.Date")) {
       return "    this." + colName + " = new Date(" + inputObj
           + ".readLong());\n";
-    } else if (javaType.equals("org.apache.sqoop.lib.Time")) {
+    } else if (javaType.equals("org.apache.sqoop.orm.Time")) {
       return "    this." + colName + " = new Time(" + inputObj
           + ".readLong());\n";
     } else if (javaType.equals("java.sql.Timestamp")) {
@@ -477,7 +477,7 @@ public class ClassWriter {
     } else if (javaType.equals("java.sql.Date")) {
       return "    " + outputObj + ".writeLong(this." + colName
           + ".getTime());\n";
-    } else if (javaType.equals("org.apache.sqoop.lib.Time")) {
+    } else if (javaType.equals("org.apache.sqoop.orm.Time")) {
       return "    " + outputObj + ".writeLong(this." + colName
           + ".getTime());\n";
     } else if (javaType.equals("java.sql.Timestamp")) {
@@ -1045,7 +1045,7 @@ public class ClassWriter {
       if (null == javaType) {
         continue;
       } else if (javaType.equals("java.sql.Date")
-          || javaType.equals("org.apache.sqoop.lib.Time")
+          || javaType.equals("org.apache.sqoop.orm.Time")
           || javaType.equals("java.sql.Timestamp")
           || javaType.equals(ClobRef.class.getName())
           || javaType.equals(BlobRef.class.getName())) {
@@ -1431,9 +1431,9 @@ public class ClassWriter {
     } else if (javaType.equals("java.sql.Date")) {
       sb.append("      this." + colName
           + " = java.sql.Date.valueOf(__cur_str);\n");
-    } else if (javaType.equals("org.apache.sqoop.lib.Time")) {
+    } else if (javaType.equals("org.apache.sqoop.orm.Time")) {
       sb.append("      this." + colName
-          + " = org.apache.sqoop.lib.Time.valueOf(__cur_str);\n");
+          + " = org.apache.sqoop.orm.Time.valueOf(__cur_str);\n");
     } else if (javaType.equals("java.sql.Timestamp")) {
       sb.append("      this." + colName
           + " = java.sql.Timestamp.valueOf(__cur_str);\n");
@@ -1925,7 +1925,7 @@ public class ClassWriter {
     sb.append("import java.nio.ByteBuffer;\n");
     sb.append("import java.nio.CharBuffer;\n");
     sb.append("import java.sql.Date;\n");
-    sb.append("import org.apache.sqoop.lib.Time;\n");
+    sb.append("import org.apache.sqoop.orm.Time;\n");
     sb.append("import java.sql.Timestamp;\n");
     sb.append("import java.util.Arrays;\n");
     sb.append("import java.util.Iterator;\n");

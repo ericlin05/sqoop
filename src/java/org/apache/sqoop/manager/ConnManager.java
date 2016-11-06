@@ -139,7 +139,7 @@ public abstract class ConnManager {
     } else if (sqlType == Types.DATE) {
       return "java.sql.Date";
     } else if (sqlType == Types.TIME) {
-      return "org.apache.sqoop.lib.Time";
+      return "org.apache.sqoop.orm.Time";
     } else if (sqlType == Types.TIMESTAMP) {
       return "java.sql.Timestamp";
     } else if (sqlType == Types.BINARY
