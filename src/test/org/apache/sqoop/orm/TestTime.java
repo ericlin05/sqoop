@@ -31,13 +31,22 @@ public class TestTime extends TestCase {
     assertEquals(1234, t.getNanos());
   }
 
-  public void testValueOf()  {
+  public void testValueOf1()  {
     Time t = Time.valueOf("12:13:14.123400");
 
     assertEquals(12, t.getHours());
     assertEquals(13, t.getMinutes());
     assertEquals(14, t.getSeconds());
     assertEquals(123400000, t.getNanos());
+  }
+
+  public void testValueOf2()  {
+    Time t = Time.valueOf("12:13:14");
+
+    assertEquals(12, t.getHours());
+    assertEquals(13, t.getMinutes());
+    assertEquals(14, t.getSeconds());
+    assertEquals(0, t.getNanos());
   }
 
   public void testValueOfNanosTooLongCappedAt9()  {
@@ -51,13 +60,31 @@ public class TestTime extends TestCase {
 
   public void testToString1() {
     Time t = new Time(12, 13, 14, 1234);
-
     assertEquals("12:13:14.000001234", t.toString());
   }
 
   public void testToString2() {
     Time t = Time.valueOf("12:13:14.1234");
-
     assertEquals("12:13:14.1234", t.toString());
+  }
+
+  public void testToString3() {
+    Time t = Time.valueOf("12:13:14");
+    assertEquals("12:13:14", t.toString());
+  }
+
+  public void testToString4() {
+    Time t = Time.valueOf("12:13:14.0");
+    assertEquals("12:13:14", t.toString());
+  }
+
+  public void testToString5() {
+    Time t = Time.valueOf("12:13:14.1000");
+    assertEquals("12:13:14.1000", t.toString());
+  }
+
+  public void testToString6() {
+    Time t = Time.valueOf("12:13:14.000123");
+    assertEquals("12:13:14.000123", t.toString());
   }
 }

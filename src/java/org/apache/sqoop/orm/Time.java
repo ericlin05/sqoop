@@ -18,6 +18,8 @@
 
 package org.apache.sqoop.orm;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.sql.Timestamp;
 
 /**
@@ -33,6 +35,24 @@ public class Time extends java.sql.Time {
 
   private int nanos;
 
+  private int nanoLength = 0;
+
+  /**
+   * Constructs a <code>Time</code> object initialized with the given values.
+   *
+   * @param hour 0 to 23
+   * @param minute 0 to 59
+   * @param second 0 to 59
+   * @param nano 0 to 999,999,999
+   * @deprecated instead use the constructor <code>Time(long millis)</code>
+   * @exception IllegalArgumentException if the nano argument is out of bounds
+   */
+  public Time(int hour, int minute, int second, int nano, int nanoLength) {
+    super(hour, minute, second);
+    this.nanos = nano;
+    this.nanoLength = nanoLength;
+  }
+
   /**
    * Constructs a <code>Time</code> object initialized with the given values.
    *
@@ -44,8 +64,7 @@ public class Time extends java.sql.Time {
    * @exception IllegalArgumentException if the nano argument is out of bounds
    */
   public Time(int hour, int minute, int second, int nano) {
-    super(hour, minute, second);
-    nanos = nano;
+    this(hour, minute, second, nano, Integer.toString(nano).length());
   }
 
   /**
@@ -67,13 +86,23 @@ public class Time extends java.sql.Time {
    */
   public static Time valueOf(String s) {
 
+    int nanoLength = 0;
     String[] split = s.split("\\.");
-    if(split.length == 2 && split[1].length() > 9) {
-      s = split[0] + "." + split[1].substring(0, 9);
+    if(split.length == 2) {
+      if(split[1].length() > 9) {
+        // cap the nano seconds part at 9 characters (maximum)
+        s = split[0] + "." + split[1].substring(0, 9);
+        nanoLength = 9;
+      } else if(split[1].equals("0")) {
+        // ignore the nano seconds if it is "0"
+        s = split[0];
+      } else {
+        nanoLength = split[1].length();
+      }
     }
 
     Timestamp t = Timestamp.valueOf("1970-01-01 " + s);
-    return new Time(t.getHours(), t.getMinutes(), t.getSeconds(), t.getNanos());
+    return new Time(t.getHours(), t.getMinutes(), t.getSeconds(), t.getNanos(), nanoLength);
   }
 
   /**
@@ -92,9 +121,25 @@ public class Time extends java.sql.Time {
         this.nanos
     );
 
-    String[] split = ts.toString().split(" ");
-    if(split.length == 2) {
-      return split[1];
+    String[] timeSplit = ts.toString().split(" ");
+    if(timeSplit.length == 2) {
+      String[] secondSplit = timeSplit[1].split("\\.");
+      if(secondSplit.length < 2) {
+        return secondSplit[0];
+      }
+
+      String nanoSeconds = secondSplit[1];
+
+      if(this.nanoLength == 0 || nanoSeconds.equals("0")) {
+        return secondSplit[0];
+      }
+
+      // SQOOP-3040 - preserve the tailing zeros
+      if(nanoSeconds.length() < this.nanoLength) {
+        nanoSeconds = secondSplit[1] + StringUtils.repeat("0", this.nanoLength - nanoSeconds.length());
+      }
+
+      return secondSplit[0] + "." + nanoSeconds;
     }
 
     // VERY unlikely to hit here (unless a but in Timestamp class), but just in case
