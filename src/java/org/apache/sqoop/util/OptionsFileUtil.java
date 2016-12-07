@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -147,16 +148,23 @@ public final class OptionsFileUtil {
    * Removes the surrounding quote characters from the given string. The quotes
    * are identified by the quote parameter, the given string by option. The
    * fileName parameter is used for raising exceptions with relevant message.
-   * @param fileName
-   * @param option
-   * @param quote
-   * @return
+   * @param fileName String
+   * @param option String
+   * @param quote char
+   * @return String
    * @throws Exception
    */
   private static String removeQuoteCharactersIfNecessary(String fileName,
       String option, char quote) throws Exception {
     boolean startingQuote = (option.charAt(0) == quote);
     boolean endingQuote = (option.charAt(option.length() - 1) == quote);
+    int numOfQuotes = StringUtils.countMatches(option, Character.toString(quote));
+
+    // quotes need to be matched, as part of fix for SQOOP-3061
+    if (numOfQuotes % 2 != 0) {
+      throw new Exception("Malformed option in options file("
+          + fileName + "): " + option);
+    }
 
     if (startingQuote && endingQuote) {
       if (option.length() == 1) {
@@ -164,11 +172,6 @@ public final class OptionsFileUtil {
             + fileName + "): " + option);
       }
       return option.substring(1, option.length() - 1);
-    }
-
-    if (startingQuote || endingQuote) {
-       throw new Exception("Malformed option in options file("
-           + fileName + "): " + option);
     }
 
     return option;

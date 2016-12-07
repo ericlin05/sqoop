@@ -162,6 +162,123 @@ public class TestOptionsFileExpansion extends TestCase {
     }
   }
 
+  /**
+   * Test case added as part of fix for: SQOOP-3061
+   *
+   * @throws Exception
+   */
+  public void testValidFreeFormQueryNoQuotes() throws Exception {
+    String[] input = new String[]{
+        "--query",
+        "SELECT * FROM table",
+    };
+
+    String[] output = new String[] {
+        "--query",
+        "SELECT * FROM table",
+    };
+
+    checkOptionsFile(input, output);
+  }
+
+  public void testValidFreeFormQuerySingleQuotesStartAndEnd() throws Exception {
+    String[] input = new String[]{
+        "--query",
+        "'SELECT * FROM table'",
+    };
+
+    String[] output = new String[]{
+        "--query",
+        "SELECT * FROM table",
+    };
+
+    checkOptionsFile(input, output);
+  }
+
+  public void testValidFreeFormQueryDoubleQuotesStartAndEnd() throws Exception {
+    String[] input = new String[]{
+        "--query",
+        "\"SELECT * FROM table\"",
+    };
+
+    String[] output = new String[]{
+        "--query",
+        "SELECT * FROM table",
+    };
+
+    checkOptionsFile(input, output);
+  }
+
+  public void testValidFreeFormQuerySingleQuotesInWhere() throws Exception {
+    String[] input = new String[]{
+        "--query",
+        "SELECT * FROM table WHERE a = '1'",
+    };
+
+    String[] output = new String[]{
+        "--query",
+        "SELECT * FROM table WHERE a = '1'",
+    };
+
+    checkOptionsFile(input, output);
+  }
+
+  public void testValidFreeFormQuerySingleAndDoubleQuotesInWhere() throws Exception {
+    String[] input = new String[] {
+        "--query",
+        "SELECT * FROM table WHERE a = '1' AND b = \"testing\"",
+    };
+
+    String[] output = new String[] {
+        "--query",
+        "SELECT * FROM table WHERE a = '1' AND b = \"testing\"",
+    };
+
+    checkOptionsFile(input, output);
+  }
+
+  /**
+   * Test case added as part of fix for: SQOOP-3061
+   *
+   * @throws Exception
+   */
+  public void testInvalidFreeFormQueryEndingSingleQuoteOnly() throws Exception {
+    String[] input = new String[]{
+        "--query",
+        "SELECT * FROM table'",
+    };
+
+    checkInvalidOptionsFile(input);
+  }
+
+  public void testInvalidFreeFormQuerySingleQuoteStartDoubleQuoteEnd() throws Exception {
+
+    String[] input = new String[]{
+        "--query",
+        "'SELECT * FROM table\"",
+    };
+
+    checkInvalidOptionsFile(input);
+  }
+
+  public void testInvalidFreeFormQueryMixedSingleDoubleQuotes() throws Exception {
+    String[] input = new String[]{
+        "--query",
+        "SELECT * FROM table WHERE a = 'b\"",
+    };
+
+    checkInvalidOptionsFile(input);
+  }
+
+  public void testInvalidFreeFormQueryMixedSingleDoubleQuotes2() throws Exception {
+    String[] input = new String[] {
+        "--query",
+        "\"SELECT * FROM table where a = 'b\" and b = 3\"",
+    };
+
+    checkInvalidOptionsFile(input);
+  }
+
   private void checkInvalidOptionsFile(String[] fileContents) {
     try {
       checkOptionsFile(fileContents, new String[] {});
