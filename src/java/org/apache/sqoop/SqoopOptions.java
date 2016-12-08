@@ -890,6 +890,13 @@ public class SqoopOptions implements Cloneable {
   }
 
   /**
+   * The flag to let Sqoop know if we need to clean up the tmp
+   * compilation directory on exit, only when the tmp directory
+   * is created by Sqoop
+   */
+  protected static boolean tmpDirDeleteOnExit = false;
+
+  /**
    * Return the name of a directory that does not exist before
    * calling this method, and does exist afterward. We should be
    * the only client of this directory. If this directory is not
@@ -919,6 +926,11 @@ public class SqoopOptions implements Cloneable {
         // If this directory is not actually filled with files, delete it
         // when the JVM quits.
         hashDir.deleteOnExit();
+        // mark it so that we know this is the directory that is created by us and
+        // we want to delete it on exit - ClassWriter will need to check for this flag
+        // to determine if we need to manually remove files under this directory so
+        // that deleteOnExit will have effect which only works on empty directory.
+        SqoopOptions.tmpDirDeleteOnExit = true;
         break;
       }
     }
@@ -2731,4 +2743,7 @@ public class SqoopOptions implements Cloneable {
     getConf().setBoolean(ORACLE_ESCAPING_DISABLED, escapingDisabled);
   }
 
+  public static boolean isTmpDirDeleteOnExit() {
+    return SqoopOptions.tmpDirDeleteOnExit;
+  }
 }
