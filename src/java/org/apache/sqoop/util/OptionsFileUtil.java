@@ -148,10 +148,10 @@ public final class OptionsFileUtil {
    * Removes the surrounding quote characters from the given string. The quotes
    * are identified by the quote parameter, the given string by option. The
    * fileName parameter is used for raising exceptions with relevant message.
-   * @param fileName String
-   * @param option String
-   * @param quote char
-   * @return String
+   * @param fileName String The name of the file that contains sqoop options
+   * @param option String the actual options in the options file
+   * @param quote char The quote that we need to validate on, either single or double quotes
+   * @return String The validated options string
    * @throws Exception
    */
   private static String removeQuoteCharactersIfNecessary(String fileName,
@@ -160,7 +160,6 @@ public final class OptionsFileUtil {
     boolean endingQuote = (option.charAt(option.length() - 1) == quote);
     int numOfQuotes = StringUtils.countMatches(option, Character.toString(quote));
 
-    // quotes need to be matched, as part of fix for SQOOP-3061
     if (numOfQuotes % 2 != 0) {
       throw new Exception("Malformed option in options file("
           + fileName + "): " + option);
