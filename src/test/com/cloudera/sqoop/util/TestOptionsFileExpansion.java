@@ -232,6 +232,76 @@ public class TestOptionsFileExpansion extends TestCase {
     checkOptionsFile(input, output);
   }
 
+  public void testValidFreeFormQueryQuotesInTableName() throws Exception {
+    String[] input = new String[] {
+        "--query",
+        "SELECT * FROM `\"` WHERE ' = 2",
+    };
+
+    String[] output = new String[] {
+        "--query",
+        "SELECT * FROM `\"` WHERE ' = 2",
+    };
+
+    checkOptionsFile(input, output);
+  }
+
+  public void testValidFreeFormQueryQuotesInTableNameAndColumnName() throws Exception {
+    String[] input = new String[] {
+        "--query",
+        "select * from `test\"test`  where `c'c`  = 'a'",
+    };
+
+    String[] output = new String[] {
+        "--query",
+        "select * from `test\"test`  where `c'c`  = 'a'",
+    };
+
+    checkOptionsFile(input, output);
+  }
+
+  public void testValidFreeFormQueryQuotesInTableNameAndColumnName2() throws Exception {
+    String[] input = new String[] {
+        "--query",
+        "select * from `test\"test`  where `c'c`  = 'a\"'",
+    };
+
+    String[] output = new String[] {
+        "--query",
+        "select * from `test\"test`  where `c'c`  = 'a\"'",
+    };
+
+    checkOptionsFile(input, output);
+  }
+
+  public void testValidFreeFormQueryQuotesInTableNameAndColumnName3() throws Exception {
+    String[] input = new String[] {
+        "--query",
+        "select * from `test\"test`  where `c'c`  = \"\"",
+    };
+
+    String[] output = new String[] {
+        "--query",
+        "select * from `test\"test`  where `c'c`  = \"\"",
+    };
+
+    checkOptionsFile(input, output);
+  }
+
+  public void testValidFreeFormQueryQuotesInTableNameAndColumnName4() throws Exception {
+    String[] input = new String[] {
+        "--query",
+        "select * from test  where a  = \"\\\"\"",
+    };
+
+    String[] output = new String[] {
+        "--query",
+        "select * from test  where a  = \"\\\"\"",
+    };
+
+    checkOptionsFile(input, output);
+  }
+
   public void testInvalidFreeFormQueryEndingSingleQuoteOnly() throws Exception {
     String[] input = new String[]{
         "--query",
