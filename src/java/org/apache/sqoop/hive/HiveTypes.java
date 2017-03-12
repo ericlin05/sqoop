@@ -32,11 +32,31 @@ public final class HiveTypes {
 
   private HiveTypes() { }
 
+  public final static String INT     = "INT";
+
+  public final static String STRING  = "STRING";
+
+  public final static String DOUBLE  = "DOUBLE";
+
+  public final static String BOOLEAN = "BOOLEAN";
+
+  public final static String TINYINT = "TINYINT";
+
+  public final static String BIGINT  = "BIGINT";
+
+  public final static String DECIMAL = "DECIMAL";
+
+  public final static int DECIMAL_MAX_PRECISION = 38;
+
+  public final static int DECIMAL_MAX_SCALE = 38;
+
   /**
    * Given JDBC SQL types coming from another database, what is the best
    * mapping to a Hive-specific type?
    */
   public static String toHiveType(int sqlType) {
+
+
 
       switch (sqlType) {
           case Types.INTEGER:
@@ -54,7 +74,6 @@ public final class HiveTypes {
           case Types.CLOB:
               return "STRING";
           case Types.NUMERIC:
-          case Types.DECIMAL:
           case Types.FLOAT:
           case Types.DOUBLE:
           case Types.REAL:
@@ -66,6 +85,8 @@ public final class HiveTypes {
               return "TINYINT";
           case Types.BIGINT:
               return "BIGINT";
+          case Types.DECIMAL:
+              return "DECIMAL";
           default:
         // TODO(aaron): Support BINARY, VARBINARY, LONGVARBINARY, DISTINCT,
         // BLOB, ARRAY, STRUCT, REF, JAVA_OBJECT.
@@ -80,7 +101,6 @@ public final class HiveTypes {
   public static boolean isHiveTypeImprovised(int sqlType) {
     return sqlType == Types.DATE || sqlType == Types.TIME
         || sqlType == Types.TIMESTAMP
-        || sqlType == Types.DECIMAL
         || sqlType == Types.NUMERIC;
   }
 }

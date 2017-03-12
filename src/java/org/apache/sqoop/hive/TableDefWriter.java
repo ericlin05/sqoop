@@ -20,12 +20,10 @@ package org.apache.sqoop.hive;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.Date;
+import java.sql.Types;
+import java.util.*;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Properties;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -37,6 +35,7 @@ import org.apache.sqoop.io.CodecMap;
 import com.cloudera.sqoop.SqoopOptions;
 import com.cloudera.sqoop.manager.ConnManager;
 import org.apache.sqoop.util.FileSystemUtil;
+import org.apache.sqoop.util.SqlTypeMap;
 
 /**
  * Creates (Hive-specific) SQL DDL statements to create tables to hold data
@@ -115,18 +114,26 @@ public class TableDefWriter {
    * @return the CREATE TABLE statement for the table to load into hive.
    */
   public String getCreateTableStmt() throws IOException {
-    Map<String, Integer> columnTypes;
+    Map<String, List<Integer>> columnTypes;
     Properties userMapping = options.getMapColumnHive();
 
     if (externalColTypes != null) {
+      columnTypes = new SqlTypeMap<String, List<Integer>>();
       // Use pre-defined column types.
-      columnTypes = externalColTypes;
+      for(String key : externalColTypes.keySet()) {
+        List<Integer> info = new ArrayList<Integer>();
+        info.add(externalColTypes.get(key));
+        info.add(null);
+        info.add(null);
+        columnTypes.put(key, info);
+      }
+
     } else {
       // Get these from the database.
       if (null != inputTableName) {
-        columnTypes = connManager.getColumnTypes(inputTableName);
+        columnTypes = connManager.getColumnInfo(inputTableName);
       } else {
-        columnTypes = connManager.getColumnTypesForQuery(options.getSqlQuery());
+        columnTypes = connManager.getColumnInfoForQuery(options.getSqlQuery());
       }
     }
 
@@ -173,7 +180,16 @@ public class TableDefWriter {
 
       first = false;
 
-      Integer colType = columnTypes.get(col);
+      List<Integer> colInfo = columnTypes.get(col);
+      Integer colType = colInfo.get(0);
+      Integer precision = null;
+      Integer scale = null;
+
+      if(colInfo.size() == 3) {
+        precision = colInfo.get(1);
+        scale = colInfo.get(2);
+      }
+
       String hiveColType = userMapping.getProperty(col);
       if (hiveColType == null) {
         hiveColType = connManager.toHiveType(inputTableName, col, colType);
@@ -181,6 +197,19 @@ public class TableDefWriter {
       if (null == hiveColType) {
         throw new IOException("Hive does not support the SQL type for column "
             + col);
+      }
+
+      if(hiveColType.equals(HiveTypes.DECIMAL) && precision != null && scale != null) {
+        // currently Hive's DECIMAL type's precision and scale are capped at 38, see HIVE-5565
+        if(precision > HiveTypes.DECIMAL_MAX_PRECISION) {
+          precision = HiveTypes.DECIMAL_MAX_PRECISION;
+        }
+
+        if(scale > HiveTypes.DECIMAL_MAX_SCALE) {
+          scale = HiveTypes.DECIMAL_MAX_SCALE;
+        }
+
+        hiveColType = hiveColType + "(" + precision + ", " + scale + ")";
       }
 
       sb.append('`').append(col).append("` ").append(hiveColType);

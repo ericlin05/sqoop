@@ -18,8 +18,11 @@
 
 package com.cloudera.sqoop.hive;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
+import com.cloudera.sqoop.manager.ConnManager;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -32,6 +35,8 @@ import com.cloudera.sqoop.testutil.HsqldbTestServer;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import static org.mockito.Mockito.*;
+import org.mockito.Mockito;
 
 import java.sql.Types;
 
@@ -247,4 +252,49 @@ public class TestTableDefWriter {
     assertTrue(createTable.contains("`db`.`outputTable`"));
   }
 
+  @Test
+  public void testGetCreateTableStmtDecimal() throws Exception {
+    String[] args = {};
+    Configuration conf = new Configuration();
+    SqoopOptions options =
+        new ImportTool().parseArguments(args, null, null, false);
+
+    ConnManager connMgr = Mockito.mock(ConnManager.class);
+
+    Map<String, List<Integer>> colInfo = new SqlTypeMap<String, List<Integer>>();
+    List<Integer> info1 = new ArrayList<Integer>(3);
+    List<Integer> info2 = new ArrayList<Integer>(3);
+    List<String> columnNames = new ArrayList<String>();
+
+    columnNames.add("decimal_column1");
+    columnNames.add("decimal_column2");
+
+    info1.add(Types.DECIMAL);
+    info1.add(4);
+    info1.add(2);
+
+    info2.add(Types.DECIMAL);
+    info2.add(44);
+    info2.add(256);
+
+    colInfo.put("decimal_column1", info1);
+    colInfo.put("decimal_column2", info2);
+
+    when(connMgr.getColumnNames("inputTable")).thenReturn(columnNames.toArray(new String[columnNames.size()]));
+    when(connMgr.getColumnInfo("inputTable")).thenReturn(colInfo);
+    when(connMgr.toHiveType("inputTable", "decimal_column1", 3)).thenReturn(
+        HiveTypes.toHiveType(Types.DECIMAL)
+    );
+    when(connMgr.toHiveType("inputTable", "decimal_column2", 3)).thenReturn(
+        HiveTypes.toHiveType(Types.DECIMAL)
+    );
+
+    TableDefWriter writer = new TableDefWriter(options,
+        connMgr, "inputTable", "targetTable", conf, false);
+
+    String createTable = writer.getCreateTableStmt();
+
+    assertTrue(createTable.contains("`decimal_column1` DECIMAL(4, 2)"));
+    assertTrue(createTable.contains("`decimal_column2` DECIMAL(38, 38)"));
+  }
 }
