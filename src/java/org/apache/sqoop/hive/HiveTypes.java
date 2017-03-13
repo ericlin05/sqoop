@@ -56,8 +56,6 @@ public final class HiveTypes {
    */
   public static String toHiveType(int sqlType) {
 
-
-
       switch (sqlType) {
           case Types.INTEGER:
           case Types.SMALLINT:
