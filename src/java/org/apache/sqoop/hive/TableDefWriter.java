@@ -137,6 +137,12 @@ public class TableDefWriter {
       }
     }
 
+    if(null == columnTypes) {
+      throw new IOException(
+          "Unable to retrieve column information"
+      );
+    }
+
     String [] colNames = getColumnNames();
     StringBuilder sb = new StringBuilder();
     if (options.doFailIfHiveTableExists()) {
