@@ -253,7 +253,7 @@ public class TestTableDefWriter {
   }
 
   @Test
-  public void testGetCreateTableStmtDecimal1() throws Exception {
+  public void testGetCreateTableStmtDecimalCorrectPrecisionAndScale() throws Exception {
     String[] args = {};
     Configuration conf = new Configuration();
     SqoopOptions options =
@@ -288,7 +288,7 @@ public class TestTableDefWriter {
   }
 
   @Test
-  public void testGetCreateTableStmtDecimal2() throws Exception {
+  public void testGetCreateTableStmtDecimalPrecisionAndScaleTooBig() throws Exception {
     String[] args = {};
     Configuration conf = new Configuration();
     SqoopOptions options =
@@ -321,4 +321,38 @@ public class TestTableDefWriter {
 
     assertTrue(createTable.contains("`decimal_column1` DECIMAL(38, 38)"));
   }
+
+  @Test
+  public void testGetCreateTableStmtDecimalNoPrecisionAndScale() throws Exception {
+    String[] args = {};
+    Configuration conf = new Configuration();
+    SqoopOptions options =
+        new ImportTool().parseArguments(args, null, null, false);
+
+    ConnManager connMgr = Mockito.mock(ConnManager.class);
+
+    Map<String, List<Integer>> colInfo = new SqlTypeMap<String, List<Integer>>();
+    List<Integer> info1 = new ArrayList<Integer>(3);
+    List<String> columnNames = new ArrayList<String>();
+
+    columnNames.add("decimal_column1");
+
+    info1.add(Types.DECIMAL);
+
+    colInfo.put("decimal_column1", info1);
+
+    when(connMgr.getColumnNames("inputTable")).thenReturn(columnNames.toArray(new String[columnNames.size()]));
+    when(connMgr.getColumnInfo("inputTable")).thenReturn(colInfo);
+    when(connMgr.toHiveType("inputTable", "decimal_column1", 3)).thenReturn(
+        HiveTypes.toHiveType(Types.DECIMAL)
+    );
+
+    TableDefWriter writer = new TableDefWriter(options,
+        connMgr, "inputTable", "targetTable", conf, false);
+
+    String createTable = writer.getCreateTableStmt();
+
+    assertTrue(createTable.contains("`decimal_column1` DECIMAL"));
+  }
+
 }

@@ -503,7 +503,7 @@ public class TestHiveImport extends ImportJobTestCase {
     final String TABLE_NAME = "DECIMAL_HIVE_IMPORT";
     setCurTableName(TABLE_NAME);
     setNumCols(2);
-    String [] types = { "DECIMAL", "DECIMAL(15,4)" };
+    String [] types = { "DECIMAL(4,0)", "DECIMAL(15,4)" };
     String [] vals = { "3.14159", "12345.23" };
     runImportTest(TABLE_NAME, types, vals, "decimalImport.q",
         getArgv(false, null), new ImportTool());
