@@ -20,15 +20,17 @@ package org.apache.sqoop.hive;
 
 import java.io.File;
 import java.io.IOException;
-import java.sql.Types;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.Date;
+import java.util.List;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Properties;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.sqoop.io.CodecMap;
 
