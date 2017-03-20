@@ -265,17 +265,17 @@ public class TestTableDefWriter {
     List<Integer> info1 = new ArrayList<Integer>(3);
     List<String> columnNames = new ArrayList<String>();
 
-    columnNames.add("decimal_column1");
+    columnNames.add("decimal_column");
 
     info1.add(Types.DECIMAL);
     info1.add(4);
     info1.add(2);
 
-    colInfo.put("decimal_column1", info1);
+    colInfo.put("decimal_column", info1);
 
     when(connMgr.getColumnNames("inputTable")).thenReturn(columnNames.toArray(new String[columnNames.size()]));
     when(connMgr.getColumnInfo("inputTable")).thenReturn(colInfo);
-    when(connMgr.toHiveType("inputTable", "decimal_column1", 3)).thenReturn(
+    when(connMgr.toHiveType("inputTable", "decimal_column", 3)).thenReturn(
         HiveTypes.toHiveType(Types.DECIMAL)
     );
 
@@ -284,7 +284,7 @@ public class TestTableDefWriter {
 
     String createTable = writer.getCreateTableStmt();
 
-    assertTrue(createTable.contains("`decimal_column1` DECIMAL(4, 2)"));
+    assertTrue(createTable.contains("`decimal_column` DECIMAL(4, 2)"));
   }
 
   @Test
@@ -300,17 +300,17 @@ public class TestTableDefWriter {
     List<Integer> info1 = new ArrayList<Integer>(3);
     List<String> columnNames = new ArrayList<String>();
 
-    columnNames.add("decimal_column1");
+    columnNames.add("decimal_column");
 
     info1.add(Types.DECIMAL);
     info1.add(44);
     info1.add(256);
 
-    colInfo.put("decimal_column1", info1);
+    colInfo.put("decimal_column", info1);
 
     when(connMgr.getColumnNames("inputTable")).thenReturn(columnNames.toArray(new String[columnNames.size()]));
     when(connMgr.getColumnInfo("inputTable")).thenReturn(colInfo);
-    when(connMgr.toHiveType("inputTable", "decimal_column1", 3)).thenReturn(
+    when(connMgr.toHiveType("inputTable", "decimal_column", 3)).thenReturn(
         HiveTypes.toHiveType(Types.DECIMAL)
     );
 
@@ -319,7 +319,7 @@ public class TestTableDefWriter {
 
     String createTable = writer.getCreateTableStmt();
 
-    assertTrue(createTable.contains("`decimal_column1` DECIMAL(38, 38)"));
+    assertTrue(createTable.contains("`decimal_column` DECIMAL(38, 38)"));
   }
 
   @Test
@@ -335,15 +335,15 @@ public class TestTableDefWriter {
     List<Integer> info1 = new ArrayList<Integer>(3);
     List<String> columnNames = new ArrayList<String>();
 
-    columnNames.add("decimal_column1");
+    columnNames.add("decimal_column");
 
     info1.add(Types.DECIMAL);
 
-    colInfo.put("decimal_column1", info1);
+    colInfo.put("decimal_column", info1);
 
     when(connMgr.getColumnNames("inputTable")).thenReturn(columnNames.toArray(new String[columnNames.size()]));
     when(connMgr.getColumnInfo("inputTable")).thenReturn(colInfo);
-    when(connMgr.toHiveType("inputTable", "decimal_column1", 3)).thenReturn(
+    when(connMgr.toHiveType("inputTable", "decimal_column", 3)).thenReturn(
         HiveTypes.toHiveType(Types.DECIMAL)
     );
 
@@ -352,7 +352,7 @@ public class TestTableDefWriter {
 
     String createTable = writer.getCreateTableStmt();
 
-    assertTrue(createTable.contains("`decimal_column1` DECIMAL"));
+    assertTrue(createTable.contains("`decimal_column` DECIMAL"));
   }
 
 }
