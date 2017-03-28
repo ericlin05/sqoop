@@ -211,10 +211,14 @@ public class TableDefWriter {
         // currently Hive's DECIMAL type's precision and scale are capped at 38, see HIVE-5565
         if(precision > HiveTypes.DECIMAL_MAX_PRECISION) {
           precision = HiveTypes.DECIMAL_MAX_PRECISION;
+          LOG.debug("Precision is greater than " + HiveTypes.DECIMAL_MAX_PRECISION + " for column: " + col +
+                    ", capping it at " + HiveTypes.DECIMAL_MAX_PRECISION);
         }
 
         if(scale > HiveTypes.DECIMAL_MAX_SCALE) {
           scale = HiveTypes.DECIMAL_MAX_SCALE;
+          LOG.debug("Scale is greater than " + HiveTypes.DECIMAL_MAX_SCALE + " for column: " + col +
+                    ", capping it at " + HiveTypes.DECIMAL_MAX_SCALE);
         }
 
         hiveColType = hiveColType + "(" + precision + ", " + scale + ")";
