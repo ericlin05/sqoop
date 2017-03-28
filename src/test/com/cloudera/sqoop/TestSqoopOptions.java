@@ -20,21 +20,18 @@ package com.cloudera.sqoop;
 
 import java.util.Properties;
 
-import com.cloudera.sqoop.tool.BaseSqoopTool;
-
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.sqoop.manager.oracle.OracleUtils;
-
-import com.cloudera.sqoop.lib.DelimiterSet;
-import com.cloudera.sqoop.tool.ImportTool;
-import com.cloudera.sqoop.testutil.HsqldbTestServer;
-import org.junit.Before;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+
+import com.cloudera.sqoop.lib.DelimiterSet;
+import com.cloudera.sqoop.testutil.HsqldbTestServer;
+import com.cloudera.sqoop.tool.BaseSqoopTool;
+import com.cloudera.sqoop.tool.ImportTool;
 
 import static org.apache.sqoop.Sqoop.SQOOP_RETHROW_PROPERTY;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -74,12 +71,14 @@ public class TestSqoopOptions {
   @Test
   public void testEmptyString() throws Exception {
     thrown.expect(SqoopOptions.InvalidOptionsException.class);
+    thrown.reportMissingExceptionWithMessage("Expected InvalidOptionsException on empty string");
     SqoopOptions.toChar("");
   }
 
   @Test
   public void testNullString() throws Exception {
     thrown.expect(SqoopOptions.InvalidOptionsException.class);
+    thrown.reportMissingExceptionWithMessage("Expected InvalidOptionsException on null string");
     SqoopOptions.toChar(null);
   }
 
@@ -134,12 +133,14 @@ public class TestSqoopOptions {
   @Test
   public void testUnknownEscape1() throws Exception {
     thrown.expect(SqoopOptions.InvalidOptionsException.class);
+    thrown.reportMissingExceptionWithMessage("Expected InvalidOptionsException on unknown escaping");
     SqoopOptions.toChar("\\Q");
   }
 
   @Test
   public void testUnknownEscape2() throws Exception {
     thrown.expect(SqoopOptions.InvalidOptionsException.class);
+    thrown.reportMissingExceptionWithMessage("Expected InvalidOptionsException on unknown escaping");
     SqoopOptions.toChar("\\nn");
   }
 
@@ -176,12 +177,14 @@ public class TestSqoopOptions {
   @Test
   public void testErrOctalChar() throws Exception {
     thrown.expect(NumberFormatException.class);
+    thrown.reportMissingExceptionWithMessage("Expected NumberFormatException on erroneous octal char");
     SqoopOptions.toChar("\\095");
   }
 
   @Test
   public void testErrHexChar() throws Exception {
     thrown.expect(NumberFormatException.class);
+    thrown.reportMissingExceptionWithMessage("Expected NumberFormatException on erroneous hex char");
     SqoopOptions.toChar("\\0x9K5");
   }
 
@@ -242,6 +245,7 @@ public class TestSqoopOptions {
     };
 
     thrown.expect(SqoopOptions.InvalidOptionsException.class);
+    thrown.reportMissingExceptionWithMessage("Expected InvalidOptionsException on invalid --num-mappers argument");
     parse(args);
   }
 
@@ -253,6 +257,7 @@ public class TestSqoopOptions {
     };
 
     thrown.expect(SqoopOptions.InvalidOptionsException.class);
+    thrown.reportMissingExceptionWithMessage("Expected InvalidOptionsException on invalid -m argument");
     parse(args);
   }
 
@@ -696,6 +701,8 @@ public class TestSqoopOptions {
     };
 
     thrown.expect(SqoopOptions.InvalidOptionsException.class);
+    thrown.reportMissingExceptionWithMessage("Expected InvalidOptionsException on incompatibility of " +
+        "--delete-target-dir and --append");
     validateImportOptions(extraArgs);
   }
 
@@ -708,6 +715,8 @@ public class TestSqoopOptions {
     };
 
     thrown.expect(SqoopOptions.InvalidOptionsException.class);
+    thrown.reportMissingExceptionWithMessage("Expected InvalidOptionsException on incompatibility of " +
+        "--delete-target-dir and --incremental");
     validateImportOptions(extraArgs);
   }
 
@@ -732,6 +741,7 @@ public class TestSqoopOptions {
         longArgument(BaseSqoopTool.TARGET_DIR_ARG), "./test"};
 
     thrown.expect(SqoopOptions.InvalidOptionsException.class);
+    thrown.reportMissingExceptionWithMessage("Expected InvalidOptionsException because of missing --hbase-table");
     validateImportOptions(extraArgs);
   }
 
@@ -764,7 +774,24 @@ public class TestSqoopOptions {
     };
 
     thrown.expect(SqoopOptions.InvalidOptionsException.class);
+    thrown.reportMissingExceptionWithMessage("Expected Exception on incompatibility of " +
+        "--autoreset-to-one-mapper and --split-by");
     validateImportOptions(extraArgs);
+  }
+
+  @Test
+  public void testEscapeMapingColumnNames() throws Exception {
+    SqoopOptions opts = new SqoopOptions();
+    // enabled by default
+    assertTrue(opts.getEscapeMappingColumnNamesEnabled());
+
+    String [] args = {
+        "--" + org.apache.sqoop.tool.BaseSqoopTool.ESCAPE_MAPPING_COLUMN_NAMES_ENABLED,
+        "false",
+    };
+
+    opts = parse(args);
+    assertFalse(opts.getEscapeMappingColumnNamesEnabled());
   }
 
 }

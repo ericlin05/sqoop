@@ -468,6 +468,8 @@ public class TestHiveImport extends ImportJobTestCase {
     ImportTool tool = new ImportTool();
 
     thrown.expect(InvalidOptionsException.class);
+    thrown.reportMissingExceptionWithMessage("Expected InvalidOptionsException during Hive table creation with " +
+        "--as-parquetfile");
     tool.validateOptions(tool.parseArguments(getArgv(false, extraArgs), null,
         null, true));
   }
@@ -503,10 +505,27 @@ public class TestHiveImport extends ImportJobTestCase {
     final String TABLE_NAME = "DECIMAL_HIVE_IMPORT";
     setCurTableName(TABLE_NAME);
     setNumCols(2);
-    String [] types = { "DECIMAL(4,0)", "DECIMAL(15,4)" };
-    String [] vals = { "3.14159", "12345.23" };
+    String[] types = {"DECIMAL(4,0)", "DECIMAL(15,4)"};
+    String[] vals = {"3.14159", "12345.23"};
     runImportTest(TABLE_NAME, types, vals, "decimalImport.q",
         getArgv(false, null), new ImportTool());
+  }
+
+  /** Test that DECIMALS using --map-column-hive option maps can run without issues. */
+  @Test
+  public void testDecimalMapColumnHive() throws IOException {
+    final String TABLE_NAME = "DECIMAL_MAP_HIVE_IMPORT";
+    setCurTableName(TABLE_NAME);
+    setNumCols(2);
+    String [] types = { "NUMERIC", "CHAR(64)" };
+    String [] vals = { "12343.14159", "'foo'" };
+
+    ArrayList<String> args = new ArrayList<String>();
+    args.add("--map-column-hive");
+    args.add(BASE_COL_NAME  + "0=DECIMAL(10,10)");
+
+    runImportTest(TABLE_NAME, types, vals, "decimalMapImport.q",
+        getArgv(false, args.toArray(new String[args.size()])), new ImportTool());
   }
 
   /** If bin/hive returns an error exit status, we should get an IOException. */
@@ -521,6 +540,7 @@ public class TestHiveImport extends ImportJobTestCase {
     String [] vals = { "3.14159", "'foo'" };
 
     thrown.expect(IOException.class);
+    thrown.reportMissingExceptionWithMessage("Expected IOException on erroneous Hive exit status");
     runImportTest(TABLE_NAME, types, vals, "failingImport.q",
         getArgv(false, null), new ImportTool());
   }
@@ -653,6 +673,8 @@ public class TestHiveImport extends ImportJobTestCase {
     ImportTool tool = new ImportTool();
 
     thrown.expect(InvalidOptionsException.class);
+    thrown.reportMissingExceptionWithMessage("Expected InvalidOptionsException with conflicting Hive delimiter " +
+        "drop/replace options");
     tool.validateOptions(tool.parseArguments(getArgv(false, moreArgs), null,
         null, true));
   }
@@ -710,16 +732,22 @@ public class TestHiveImport extends ImportJobTestCase {
 
     // Test hive-import with the 1st args.
     thrown.expect(IOException.class);
+    thrown.reportMissingExceptionWithMessage("Expected IOException during Hive import with partition key " +
+        "as importing column");
     runImportTest(TABLE_NAME, types, vals, "partitionImport.q",
         getArgv(false, moreArgs1), new ImportTool());
 
     // Test hive-import with the 2nd args.
     thrown.expect(IOException.class);
+    thrown.reportMissingExceptionWithMessage("Expected IOException during Hive import with partition key " +
+        "as importing column");
     runImportTest(TABLE_NAME, types, vals, "partitionImport.q",
         getArgv(false, moreArgs2), new ImportTool());
 
     // Test create-hive-table with the 1st args.
     thrown.expect(IOException.class);
+    thrown.reportMissingExceptionWithMessage("Expected IOException during Hive table creation with partition key " +
+        "as importing column");
     runImportTest(TABLE_NAME, types, vals, "partitionImport.q",
         getCreateTableArgv(false, moreArgs1), new CreateHiveTableTool());
   }
