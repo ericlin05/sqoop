@@ -1409,7 +1409,12 @@ public class ClassWriter {
   private void parseColumn(String colName, int colType, StringBuilder sb) {
     // assume that we have __it and __cur_str vars, based on
     // __loadFromFields() code.
-    sb.append("    __cur_str = __it.next();\n");
+
+    sb.append("    if (__it.hasNext()) {\n");
+    sb.append("        __cur_str = __it.next();\n");
+    sb.append("    } else {\n");
+    sb.append("        __cur_str = \"null\";\n");
+    sb.append("    }\n");
     String javaType = toJavaType(colName, colType);
 
     parseNullVal(javaType, colName, sb);
