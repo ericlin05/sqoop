@@ -404,6 +404,21 @@ public class TestExport extends ExportJobTestCase {
     assertColValForRowId(maxId, colName, expectedMax);
   }
 
+  /** Verify that for the values of the 'id' column are null as expected
+   */
+  protected void assertColNull(String colName, ColumnGenerator generator)
+      throws SQLException {
+    Connection conn = getConnection();
+    int minId = getMinRowId(conn);
+    int maxId = getMaxRowId(conn);
+
+    LOG.info("Checking values for column " + colName + " with type "
+        + generator.getType() + " should be null");
+
+    assertColValForRowId(minId, colName, null);
+    assertColValForRowId(maxId, colName, null);
+  }
+
   /**
    * Create a new string array with 'moreEntries' appended to the 'entries'
    * array.
@@ -895,4 +910,27 @@ public class TestExport extends ExportJobTestCase {
     verifyExport(TOTAL_RECORDS);
   }
 
+  /**
+   * When we have less columns in the export file than in the export table, without changes in SQOOP-3158
+   * it will fail with errors. After SQOOP-3158, it should succeed without errors
+   *
+   * @throws IOException
+   * @throws SQLException
+   */
+  @Test
+  public void testLessColumnsInFileThanInTable() throws IOException, SQLException {
+    final int TOTAL_RECORDS = 10;
+
+    ColumnGenerator genDate = getDateColumnGenerator();
+    ColumnGenerator genTime = getTimeColumnGenerator();
+
+    createTextFile(0, TOTAL_RECORDS, false, genDate);
+    createTable(genDate, genTime);
+    runExport(getArgv(true, 10, 10));
+    verifyExport(TOTAL_RECORDS);
+    assertColMinAndMax(forIdx(0), genDate);
+
+    // test that the Time column is with NULL values
+    assertColNull(forIdx(1), genTime);
+  }
 }
