@@ -404,21 +404,6 @@ public class TestExport extends ExportJobTestCase {
     assertColValForRowId(maxId, colName, expectedMax);
   }
 
-  /** Verify that for the values of the 'id' column are null as expected
-   */
-  protected void assertColNull(String colName, ColumnGenerator generator)
-      throws SQLException {
-    Connection conn = getConnection();
-    int minId = getMinRowId(conn);
-    int maxId = getMaxRowId(conn);
-
-    LOG.info("Checking values for column " + colName + " with type "
-        + generator.getType() + " should be null");
-
-    assertColValForRowId(minId, colName, null);
-    assertColValForRowId(maxId, colName, null);
-  }
-
   /**
    * Create a new string array with 'moreEntries' appended to the 'entries'
    * array.
@@ -931,6 +916,19 @@ public class TestExport extends ExportJobTestCase {
     assertColMinAndMax(forIdx(0), genDate);
 
     // test that the Time column is with NULL values
-    assertColNull(forIdx(1), genTime);
+    class NullColumnGenerator implements ColumnGenerator {
+      public String getExportText(int rowNum) {
+        return null;
+      }
+      public String getVerifyText(int rowNum) {
+        return null;
+      }
+      public String getType() {
+        return "Timestamp";
+      }
+    }
+
+    ColumnGenerator genNull = new NullColumnGenerator();
+    assertColMinAndMax(forIdx(1), genNull);
   }
 }
