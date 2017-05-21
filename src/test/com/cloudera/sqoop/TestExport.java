@@ -931,4 +931,71 @@ public class TestExport extends ExportJobTestCase {
     ColumnGenerator genNull = new NullColumnGenerator();
     assertColMinAndMax(forIdx(1), genNull);
   }
+
+  /**
+   * When we have less columns in the export file than in the export table, without changes in SQOOP-3158
+   * it will fail with errors. After SQOOP-3158, it should succeed without errors
+   *
+   * @throws IOException
+   * @throws SQLException
+   */
+  @Test
+  public void testLessColumnsInFileThanInTableInputNullStringPassed() throws IOException, SQLException {
+    final int TOTAL_RECORDS = 10;
+
+    // a column that contains string value of "NNUULL",
+    // this should be treated as NULL value during test import
+    // due to --input-null-string is defined usig "NNUULL"
+    class StringNULLValueColumnGenerator implements ColumnGenerator {
+      public String getExportText(int rowNum) {
+        return "NNUULL";
+      }
+      public String getVerifyText(int rowNum) {
+        return "NNUULL";
+      }
+      public String getType() {
+          return "VARCHAR(255)";
+        }
+    }
+
+    // a normal string column
+    class  StringColumnGenerator implements ColumnGenerator {
+      public String getExportText(int rowNum) {
+        int day = rowNum + 1;
+        return "ROW_" + pad(day);
+      }
+      public String getVerifyText(int rowNum) {
+        int day = rowNum + 1;
+        return "ROW_" + pad(day);
+      }
+      public String getType() {
+          return "VARCHAR(255)";
+        }
+    }
+
+    // test that the second column is with NULL values after import
+    class NullColumnGenerator implements ColumnGenerator {
+      public String getExportText(int rowNum) {
+        return null;
+      }
+      public String getVerifyText(int rowNum) {
+        return null;
+      }
+      public String getType() {
+        return "VARCHAR(255)";
+      }
+    }
+
+    ColumnGenerator genString = new StringColumnGenerator();
+    ColumnGenerator genNullString = new StringNULLValueColumnGenerator();
+
+    createTextFile(0, TOTAL_RECORDS, false, genString);
+    createTable(genString, genNullString);
+    runExport(getArgv(true, 10, 10, "--input-null-string", "NNUULL"));
+    verifyExport(TOTAL_RECORDS);
+    assertColMinAndMax(forIdx(0), genString);
+
+    ColumnGenerator genNull = new NullColumnGenerator();
+    assertColMinAndMax(forIdx(1), genNull);
+  }
 }

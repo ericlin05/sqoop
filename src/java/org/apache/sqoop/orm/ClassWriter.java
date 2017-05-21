@@ -1413,7 +1413,7 @@ public class ClassWriter {
     sb.append("    if (__it.hasNext()) {\n");
     sb.append("        __cur_str = __it.next();\n");
     sb.append("    } else {\n");
-    sb.append("        __cur_str = \"null\";\n");
+    sb.append("        __cur_str = \"" + this.options.getInNullStringValue() + "\";\n");
     sb.append("    }\n");
     String javaType = toJavaType(colName, colType);
 
