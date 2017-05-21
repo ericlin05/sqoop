@@ -933,8 +933,8 @@ public class TestExport extends ExportJobTestCase {
   }
 
   /**
-   * When we have less columns in the export file than in the export table, without changes in SQOOP-3158
-   * it will fail with errors. After SQOOP-3158, it should succeed without errors
+   * When Sqoop options "--input-null-string" is passed in, we need to make sure that the expected
+   * NULL values are stored in the destination database after export.
    *
    * @throws IOException
    * @throws SQLException
