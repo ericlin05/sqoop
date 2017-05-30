@@ -20,7 +20,15 @@ package org.apache.sqoop;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.Timestamp;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Time;
+import java.sql.Types;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sqoop.manager.GenericJdbcManager;
