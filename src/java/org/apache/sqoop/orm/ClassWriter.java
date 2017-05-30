@@ -1410,12 +1410,20 @@ public class ClassWriter {
     // assume that we have __it and __cur_str vars, based on
     // __loadFromFields() code.
 
+    String javaType = toJavaType(colName, colType);
+
+    String nullValue;
+    if (javaType.equals("String")) {
+      nullValue = this.options.getInNullStringValue();
+    } else {
+      nullValue = this.options.getInNullNonStringValue();
+    }
+
     sb.append("    if (__it.hasNext()) {\n");
     sb.append("        __cur_str = __it.next();\n");
     sb.append("    } else {\n");
-    sb.append("        __cur_str = \"" + this.options.getInNullStringValue() + "\";\n");
+    sb.append("        __cur_str = \"" + nullValue + "\";\n");
     sb.append("    }\n");
-    String javaType = toJavaType(colName, colType);
 
     parseNullVal(javaType, colName, sb);
     if (javaType.equals("String")) {
