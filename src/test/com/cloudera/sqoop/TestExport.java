@@ -939,7 +939,7 @@ public class TestExport extends ExportJobTestCase {
    * - first file has one missing column
    * - second file has correct number of columns
    * - second file has last column with the value defined by parameter --input-null-string
-   * - last column of of STRING data type
+   * - last column is of STRING data type
    *
    * This case will happen when destination table has been modified to add a new column and
    * user has data for both before and after the table modification, some files has less columns
@@ -1017,7 +1017,7 @@ public class TestExport extends ExportJobTestCase {
    * - first file has one missing column
    * - second file has correct number of columns
    * - second file has last column with the value defined by parameter --input-null-non-string
-   * - last column of of INTEGER data type
+   * - last column is of INTEGER data type
    *
    * This case will happen when destination table has been modified to add a new column and
    * user has data for both before and after the table modification, some files has less columns
