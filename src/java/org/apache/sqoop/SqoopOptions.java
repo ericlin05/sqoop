@@ -997,7 +997,7 @@ public class SqoopOptions implements Cloneable {
     // Set this to cwd, but -Dsqoop.src.dir can override.
     this.codeOutputDir = System.getProperty("sqoop.src.dir", ".");
 
-    String myTmpDir = System.getProperty("test.build.data", "/tmp");
+    String myTmpDir = System.getProperty("test.build.data", "/tmp/");
     if (!myTmpDir.endsWith(File.separator)) {
       myTmpDir = myTmpDir + File.separator;
     }
@@ -1627,8 +1627,7 @@ public class SqoopOptions implements Cloneable {
   }
 
   /**
-   * @return location where .jar and .class files go; guaranteed to end with
-   * '/'.
+   * @return boolean - whether or not to delete the compile JAR directory
    */
   public Boolean getDeleteJarOutputDir() {
     return this.deleteJarOutputDir;
