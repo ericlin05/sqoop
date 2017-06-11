@@ -151,6 +151,7 @@ public class SqoopOptions implements Cloneable {
 
   @StoredAsProperty("codegen.output.dir") private String codeOutputDir;
   @StoredAsProperty("codegen.compile.dir") private String jarOutputDir;
+  @StoredAsProperty("codegen.delete.compile.dir") private Boolean deleteJarOutputDir;
   // Boolean specifying whether jarOutputDir is a nonce tmpdir (true), or
   // explicitly set by the user (false). If the former, disregard any value
   // for jarOutputDir saved in the metastore.
@@ -899,13 +900,6 @@ public class SqoopOptions implements Cloneable {
   }
 
   /**
-   * The flag to let Sqoop know if we need to clean up the tmp
-   * compilation directory on exit, only when the tmp directory
-   * is created by Sqoop
-   */
-  protected static boolean tmpDirDeleteOnExit = false;
-
-  /**
    * Return the name of a directory that does not exist before
    * calling this method, and does exist afterward. We should be
    * the only client of this directory. If this directory is not
@@ -935,11 +929,6 @@ public class SqoopOptions implements Cloneable {
         // If this directory is not actually filled with files, delete it
         // when the JVM quits.
         hashDir.deleteOnExit();
-        // mark it so that we know this is the directory that is created by us and
-        // we want to delete it on exit - ClassWriter will need to check for this flag
-        // to determine if we need to manually remove files under this directory so
-        // that deleteOnExit will have effect which only works on empty directory.
-        SqoopOptions.tmpDirDeleteOnExit = true;
         break;
       }
     }
@@ -1008,7 +997,7 @@ public class SqoopOptions implements Cloneable {
     // Set this to cwd, but -Dsqoop.src.dir can override.
     this.codeOutputDir = System.getProperty("sqoop.src.dir", ".");
 
-    String myTmpDir = System.getProperty("test.build.data", "/tmp/");
+    String myTmpDir = System.getProperty("test.build.data", "/tmp");
     if (!myTmpDir.endsWith(File.separator)) {
       myTmpDir = myTmpDir + File.separator;
     }
@@ -1017,6 +1006,8 @@ public class SqoopOptions implements Cloneable {
     String localUsername = System.getProperty("user.name", "unknown");
     this.jarOutputDir = getNonceJarDir(tmpDir + "sqoop-" + localUsername
         + "/compile");
+
+    this.deleteJarOutputDir = false;
     this.jarDirIsAuto = true;
     this.layout = FileLayout.TextFile;
 
@@ -1633,6 +1624,18 @@ public class SqoopOptions implements Cloneable {
   public void setJarOutputDir(String outDir) {
     this.jarOutputDir = outDir;
     this.jarDirIsAuto = false;
+  }
+
+  /**
+   * @return location where .jar and .class files go; guaranteed to end with
+   * '/'.
+   */
+  public Boolean getDeleteJarOutputDir() {
+    return this.deleteJarOutputDir;
+  }
+
+  public void setDeleteJarOutputDir(Boolean delete) {
+    this.deleteJarOutputDir = delete;
   }
 
   /**
@@ -2797,8 +2800,4 @@ public class SqoopOptions implements Cloneable {
 
       return mapColumnJava;
     }
-
-  public static boolean isTmpDirDeleteOnExit() {
-    return SqoopOptions.tmpDirDeleteOnExit;
-  }
 }

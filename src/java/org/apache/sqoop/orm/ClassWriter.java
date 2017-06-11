@@ -1788,7 +1788,7 @@ public class ClassWriter {
     // SQOOP-3042 - Sqoop does not clear compile directory under /tmp/sqoop-<username>/compile
     // Add shutdown hook so that all files under the jar output dir can be cleared
     // the directory itself has been added deleteOnExit, so we don't need to worry about it
-    if(SqoopOptions.isTmpDirDeleteOnExit()) {
+    if(options.getDeleteJarOutputDir()) {
       final String tmpDir = options.getJarOutputDir();
       Runtime.getRuntime().addShutdownHook(new Thread() {
         @Override
