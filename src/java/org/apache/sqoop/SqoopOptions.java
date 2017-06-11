@@ -151,7 +151,7 @@ public class SqoopOptions implements Cloneable {
 
   @StoredAsProperty("codegen.output.dir") private String codeOutputDir;
   @StoredAsProperty("codegen.compile.dir") private String jarOutputDir;
-  @StoredAsProperty("codegen.delete.compile.dir") private Boolean deleteJarOutputDir;
+  @StoredAsProperty("codegen.delete.compile.dir") private boolean deleteJarOutputDir;
   // Boolean specifying whether jarOutputDir is a nonce tmpdir (true), or
   // explicitly set by the user (false). If the former, disregard any value
   // for jarOutputDir saved in the metastore.

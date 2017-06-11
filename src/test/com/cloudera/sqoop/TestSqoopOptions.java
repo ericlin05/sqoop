@@ -692,6 +692,19 @@ public class TestSqoopOptions {
     }
   }
 
+  //test compatability of --detele-compile-dir with import
+  @Test
+  public void testDeteleCompileDir() throws Exception {
+    String [] extraArgs = {
+        "--delete-compile-dir",
+    };
+    try {
+      validateImportOptions(extraArgs);
+    } catch(SqoopOptions.InvalidOptionsException ioe) {
+      fail("Unexpected InvalidOptionsException" + ioe);
+    }
+  }
+
   //test incompatability of --delete-target-dir & --append with import
   @Test
   public void testDeleteTargetDirWithAppend() throws Exception {
