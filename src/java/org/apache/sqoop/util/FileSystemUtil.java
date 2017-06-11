@@ -16,26 +16,30 @@
  * limitations under the License.
  */
 
-package com.cloudera.sqoop;
+package org.apache.sqoop.util;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+import java.io.IOException;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 
-/**
- * All tests for Sqoop (com.cloudera.sqoop).
- */
-public final class AllTests {
-
-  private AllTests() { }
-
-  public static Test suite() {
-    TestSuite suite = new TestSuite("All tests for com.cloudera.sqoop");
-
-    suite.addTest(SmokeTests.suite());
-    suite.addTest(ThirdPartyTests.suite());
-
-    return suite;
+public final class FileSystemUtil {
+  private FileSystemUtil() {
   }
 
-}
 
+  /**
+   * Creates a fully-qualified path object.
+   * @param path the path to fully-qualify with its file system URI.
+   * @param conf the current Hadoop configuration.
+   * @return a new path representing the same location as the input path,
+   * but with a fully-qualified URI. Returns {@code null} if provided path is {@code null};
+   */
+  public static Path makeQualified(Path path, Configuration conf)
+      throws IOException {
+    if (null == path) {
+      return null;
+    }
+
+    return path.getFileSystem(conf).makeQualified(path);
+  }
+}

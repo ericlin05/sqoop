@@ -38,9 +38,11 @@ import org.junit.Before;
 import com.cloudera.sqoop.SqoopOptions;
 import com.cloudera.sqoop.TestExport;
 import com.cloudera.sqoop.mapreduce.MySQLExportMapper;
+import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Test the DirectMySQLManager implementation's exportJob() functionality.
@@ -55,6 +57,7 @@ public class DirectMySQLExportTest extends TestExport {
   // instance variables populated during setUp, used during tests.
   private DirectMySQLManager manager;
   private Connection conn;
+  private MySQLTestUtils mySQLTestUtils = new MySQLTestUtils();
 
   @Override
   protected Connection getConnection() {
@@ -68,7 +71,7 @@ public class DirectMySQLExportTest extends TestExport {
 
   @Override
   protected String getConnectString() {
-    return MySQLTestUtils.CONNECT_STRING;
+    return mySQLTestUtils.getMySqlConnectString();
   }
 
   @Override
@@ -85,9 +88,10 @@ public class DirectMySQLExportTest extends TestExport {
   public void setUp() {
     super.setUp();
 
-    SqoopOptions options = new SqoopOptions(MySQLTestUtils.CONNECT_STRING,
+    SqoopOptions options = new SqoopOptions(mySQLTestUtils.getMySqlConnectString(),
         getTableName());
-    options.setUsername(MySQLTestUtils.getCurrentUser());
+    options.setUsername(mySQLTestUtils.getUserName());
+    mySQLTestUtils.addPasswordIfIsSet(options);
     this.manager = new DirectMySQLManager(options);
 
     try {
@@ -122,26 +126,14 @@ public class DirectMySQLExportTest extends TestExport {
 
   @Override
   protected String [] getCodeGenArgv(String... extraArgs) {
-
-    String [] moreArgs = new String[extraArgs.length + 2];
-    int i = 0;
-    for (i = 0; i < extraArgs.length; i++) {
-      moreArgs[i] = extraArgs[i];
-    }
-
-    // Add username argument for mysql.
-    moreArgs[i++] = "--username";
-    moreArgs[i++] = MySQLTestUtils.getCurrentUser();
-
-    return super.getCodeGenArgv(moreArgs);
+    return super.getCodeGenArgv(mySQLTestUtils.addUserNameAndPasswordToArgs(extraArgs));
   }
 
   @Override
   protected String [] getArgv(boolean includeHadoopFlags,
       int rowsPerStatement, int statementsPerTx, String... additionalArgv) {
 
-    String [] subArgv = newStrArray(additionalArgv, "--direct",
-        "--username", MySQLTestUtils.getCurrentUser());
+    String [] subArgv = newStrArray(mySQLTestUtils.addUserNameAndPasswordToArgs(additionalArgv),"--direct");
     return super.getArgv(includeHadoopFlags, rowsPerStatement,
         statementsPerTx, subArgv);
   }
@@ -149,6 +141,7 @@ public class DirectMySQLExportTest extends TestExport {
   /**
    * Test a single mapper that runs several transactions serially.
    */
+  @Test
   public void testMultiTxExport() throws IOException, SQLException {
     multiFileTest(1, 20, 1,
         "-D", MySQLExportMapper.MYSQL_CHECKPOINT_BYTES_KEY + "=10");
@@ -157,6 +150,7 @@ public class DirectMySQLExportTest extends TestExport {
   /**
    * Test an authenticated export using mysqlimport.
    */
+  @Test
   public void testAuthExport() throws IOException, SQLException {
     SqoopOptions options = new SqoopOptions(MySQLAuthTest.AUTH_CONNECT_STRING,
         getTableName());
@@ -226,6 +220,7 @@ public class DirectMySQLExportTest extends TestExport {
   /**
    * Test an authenticated export using mysqlimport.
    */
+  @Test
   public void testEscapedByExport() throws IOException, SQLException {
     SqoopOptions options = new SqoopOptions(MySQLAuthTest.AUTH_CONNECT_STRING,
         getTableName());
@@ -308,12 +303,14 @@ public class DirectMySQLExportTest extends TestExport {
   }
 
   @Override
+  @Test
   public void testMultiMapTextExportWithStaging()
     throws IOException, SQLException {
     // disable this test as staging is not supported in direct mode
   }
 
   @Override
+  @Test
   public void testMultiTransactionWithStaging()
     throws IOException, SQLException {
     // disable this test as staging is not supported in direct mode

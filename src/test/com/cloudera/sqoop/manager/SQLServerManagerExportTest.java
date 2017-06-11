@@ -26,6 +26,7 @@ import com.cloudera.sqoop.testutil.ExportJobTestCase;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Test;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -38,21 +39,30 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
 /**
- * Please see instructions in SQLServerManagerImportManualTest.
+ * Please see instructions in SQLServerManagerImportTest.
  */
-public class SQLServerManagerExportManualTest extends ExportJobTestCase {
+public class SQLServerManagerExportTest extends ExportJobTestCase {
 
     public static final Log LOG = LogFactory.getLog(
-      SQLServerManagerExportManualTest.class.getName());
+      SQLServerManagerExportTest.class.getName());
 
   static final String HOST_URL = System.getProperty(
           "sqoop.test.sqlserver.connectstring.host_url",
           "jdbc:sqlserver://sqlserverhost:1433");
+  static final String DATABASE_NAME = System.getProperty(
+      "sqoop.test.sqlserver.database",
+      "sqooptest");
+  static final String DATABASE_USER = System.getProperty(
+      "ms.sqlserver.username",
+      "sqoopuser");
+  static final String DATABASE_PASSWORD = System.getProperty(
+      "ms.sqlserver.password",
+      "password");
 
-  static final String DATABASE_NAME = "SQOOPTEST";
-  static final String DATABASE_USER = "SQOOPUSER";
-  static final String DATABASE_PASSWORD = "PASSWORD";
   static final String SCHEMA_DBO = "dbo";
   static final String DBO_TABLE_NAME = "EMPLOYEES_MSSQL";
   static final String DBO_BINARY_TABLE_NAME = "BINARYTYPE_MSSQL";
@@ -78,6 +88,11 @@ public class SQLServerManagerExportManualTest extends ExportJobTestCase {
   @Override
   protected boolean useHsqldbTestServer() {
     return false;
+  }
+
+  private String getDropTableStatement(String schema, String tableName) {
+    return "DROP TABLE IF EXISTS " + manager.escapeObjectName(schema)
+        + "." + manager.escapeObjectName(tableName);
   }
 
   @Before
@@ -243,6 +258,14 @@ public class SQLServerManagerExportManualTest extends ExportJobTestCase {
 
   @After
   public void tearDown() {
+    try {
+      Statement stmt = conn.createStatement();
+      stmt.executeUpdate(getDropTableStatement(SCHEMA_DBO, DBO_TABLE_NAME));
+      stmt.executeUpdate(getDropTableStatement(SCHEMA_SCH, SCH_TABLE_NAME));
+    } catch (SQLException e) {
+      LOG.error("Can't clean up the database:", e);
+    }
+
     super.tearDown();
     try {
       conn.close();
@@ -296,6 +319,7 @@ public class SQLServerManagerExportManualTest extends ExportJobTestCase {
     output.close();
   }
 
+  @Test
   public void testExport() throws IOException, SQLException {
     createTestFile("inputFile", new String[] {
       "2,Bob,400,sales",
@@ -307,6 +331,7 @@ public class SQLServerManagerExportManualTest extends ExportJobTestCase {
     assertRowCount(2, escapeObjectName(DBO_TABLE_NAME), conn);
   }
 
+  @Test
   public void testExportCustomSchema() throws IOException, SQLException {
     createTestFile("inputFile", new String[] {
       "2,Bob,400,sales",
@@ -327,6 +352,7 @@ public class SQLServerManagerExportManualTest extends ExportJobTestCase {
     );
   }
 
+  @Test
   public void testExportTableHints() throws IOException, SQLException {
     createTestFile("inputFile", new String[] {
       "2,Bob,400,sales",
@@ -340,6 +366,7 @@ public class SQLServerManagerExportManualTest extends ExportJobTestCase {
     assertRowCount(2, escapeObjectName(DBO_TABLE_NAME), conn);
   }
 
+  @Test
   public void testExportTableHintsMultiple() throws IOException, SQLException {
     createTestFile("inputFile", new String[] {
       "2,Bob,400,sales",
@@ -353,6 +380,7 @@ public class SQLServerManagerExportManualTest extends ExportJobTestCase {
     assertRowCount(2, escapeObjectName(DBO_TABLE_NAME), conn);
   }
 
+  @Test
   public void testSQLServerBinaryType() throws IOException, SQLException {
     createSQLServerBinaryTypeTable(SCHEMA_DBO, DBO_BINARY_TABLE_NAME);
     createTestFile("inputFile", new String[] {
@@ -365,6 +393,7 @@ public class SQLServerManagerExportManualTest extends ExportJobTestCase {
   }
 
   /** Make sure mixed update/insert export work correctly. */
+  @Test
   public void testUpsertTextExport() throws IOException, SQLException {
     createTestFile("inputFile", new String[] {
       "2,Bob,400,sales",
@@ -372,11 +401,11 @@ public class SQLServerManagerExportManualTest extends ExportJobTestCase {
     });
     // first time will be insert.
     runExport(getArgv(SCH_TABLE_NAME, "--update-key", "id",
-              "--update-mode", "allowinsert"));
+              "--update-mode", "allowinsert", "--", "--schema", SCHEMA_SCH));
     // second time will be update.
     runExport(getArgv(SCH_TABLE_NAME, "--update-key", "id",
-              "--update-mode", "allowinsert"));
-    assertRowCount(2, escapeObjectName(SCH_TABLE_NAME), conn);
+              "--update-mode", "allowinsert", "--", "--schema", SCHEMA_SCH));
+    assertRowCount(2, escapeObjectName(SCHEMA_SCH) + "." + escapeObjectName(SCH_TABLE_NAME), conn);
   }
 
   public static void checkSQLBinaryTableContent(String[] expected, String tableName, Connection connection){
