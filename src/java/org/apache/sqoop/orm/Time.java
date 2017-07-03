@@ -18,7 +18,7 @@
 
 package org.apache.sqoop.orm;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 
 import java.sql.Timestamp;
 
