@@ -55,30 +55,38 @@ import static org.junit.Assert.fail;
  * Since this requires an SQLServer installation,
  * this class is named in such a way that Sqoop's default QA process does
  * not run it. You need to run this manually with
- * -Dtestcase=SQLServerManagerImportManualTest.
+ * -Dtestcase=SQLServerManagerImportTest or -Dthirdparty=true.
  *
  * You need to put SQL Server JDBC driver library (sqljdbc4.jar) in a location
  * where Sqoop will be able to access it (since this library cannot be checked
- * into Apache's tree for licensing reasons).
+ * into Apache's tree for licensing reasons) and set it's path through -Dsqoop.thirdparty.lib.dir.
  *
  * To set up your test environment:
  *   Install SQL Server Express 2012
  *   Create a database SQOOPTEST
  *   Create a login SQOOPUSER with password PASSWORD and grant all
  *   access for SQOOPTEST to SQOOPUSER.
+ *   Set these through -Dsqoop.test.sqlserver.connectstring.host_url, -Dsqoop.test.sqlserver.database and
+ *   -Dms.sqlserver.password
  */
-public class SQLServerManagerImportManualTest extends ImportJobTestCase {
+public class SQLServerManagerImportTest extends ImportJobTestCase {
 
   public static final Log LOG = LogFactory.getLog(
-          SQLServerManagerImportManualTest.class.getName());
+          SQLServerManagerImportTest.class.getName());
 
   static final String HOST_URL = System.getProperty(
           "sqoop.test.sqlserver.connectstring.host_url",
           "jdbc:sqlserver://sqlserverhost:1433");
+  static final String DATABASE_NAME = System.getProperty(
+      "sqoop.test.sqlserver.database",
+      "sqooptest");
+  static final String DATABASE_USER = System.getProperty(
+      "ms.sqlserver.username",
+      "sqoopuser");
+  static final String DATABASE_PASSWORD = System.getProperty(
+      "ms.sqlserver.password",
+      "password");
 
-  static final String DATABASE_NAME = "SQOOPTEST";
-  static final String DATABASE_USER = "SQOOPUSER";
-  static final String DATABASE_PASSWORD = "PASSWORD";
   static final String SCHEMA_DBO = "dbo";
   static final String DBO_TABLE_NAME = "EMPLOYEES_MSSQL";
   static final String SCHEMA_SCH = "sch";
@@ -94,6 +102,7 @@ public class SQLServerManagerImportManualTest extends ImportJobTestCase {
   private SQLServerManager manager;
 
   private Configuration conf = new Configuration();
+  private Connection conn = null;
 
   @Override
   protected Configuration getConf() {
@@ -103,6 +112,11 @@ public class SQLServerManagerImportManualTest extends ImportJobTestCase {
   @Override
   protected boolean useHsqldbTestServer() {
     return false;
+  }
+
+  private String getDropTableStatement(String schema, String tableName) {
+    return "DROP TABLE IF EXISTS " + manager.escapeObjectName(schema)
+        + "." + manager.escapeObjectName(tableName);
   }
 
   @Before
@@ -130,7 +144,6 @@ public class SQLServerManagerImportManualTest extends ImportJobTestCase {
     String fulltableName = manager.escapeObjectName(schema)
       + "." + manager.escapeObjectName(table);
 
-    Connection conn = null;
     Statement stmt = null;
 
     // Create schema if needed
@@ -208,6 +221,14 @@ public class SQLServerManagerImportManualTest extends ImportJobTestCase {
 
   @After
   public void tearDown() {
+    try {
+      Statement stmt = conn.createStatement();
+      stmt.executeUpdate(getDropTableStatement(SCHEMA_DBO, DBO_TABLE_NAME));
+      stmt.executeUpdate(getDropTableStatement(SCHEMA_SCH, SCH_TABLE_NAME));
+    } catch (SQLException e) {
+      LOG.error("Can't clean up the database:", e);
+    }
+
     super.tearDown();
     try {
       manager.close();

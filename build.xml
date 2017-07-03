@@ -40,14 +40,14 @@
   <property environment="env"/>
   <property name="name" value="sqoop" />
   <property name="Name" value="Sqoop" />
-  <property name="version" value="1.4.7-SNAPSHOT" />
+  <property name="version" value="1.5.0-SNAPSHOT" />
 
   <!-- Ivy library properties -->
   <property name="ivy.dir" location="${basedir}/ivy" />
   <loadproperties srcfile="${ivy.dir}/libraries.properties"/>
 
   <!-- The last version released. -->
-  <property name="oldversion" value="1.4.6" />
+  <property name="oldversion" value="1.4.7" />
   <!-- The point when we branched for the previous release. -->
   <property name="prev.git.hash"
       value="81624ddf3c8ca5834ab015ebafc8b8649ac36ab7" />
@@ -223,6 +223,9 @@
 
   <property name="sqoop.test.sqlserver.connectstring.host_url"
             value="jdbc:sqlserver://sqlserverhost:1433"/>
+
+  <property name="sqoop.test.sqlserver.database"
+            value="sqooptest"/>
 
   <property name="java.security.krb5.realm"
             value="OX.AC.UK"/>
@@ -740,7 +743,7 @@
       <sysproperty key="test.build.data" value="${build.test}/data"/>
       <sysproperty key="build.test" value="${build.test}"/>
 
-      <!-- microsoft sqlserver manual test related properties-->
+      <!-- microsoft sqlserver thirdparty test related properties-->
       <sysproperty key="test.data.dir" value="${basedir}/testdata"/>
       <sysproperty key="ms.datatype.test.data.file.export" value="DatatypeTestData-export-lite.txt"/>
       <sysproperty key="ms.datatype.test.data.file.import" value="DatatypeTestData-import-lite.txt"/>
@@ -849,6 +852,9 @@
 
       <sysproperty key="sqoop.test.sqlserver.connectstring.host_url"
                    value="${sqoop.test.sqlserver.connectstring.host_url}"/>
+
+      <sysproperty key="sqoop.test.sqlserver.database"
+                   value="${sqoop.test.sqlserver.database}"/>
 
       <sysproperty key="sqoop.test.msserver.connector.factory"
                    value="${sqoop.test.msserver.connector.factory}"/>
