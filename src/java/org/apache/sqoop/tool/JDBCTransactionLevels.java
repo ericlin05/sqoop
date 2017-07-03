@@ -16,29 +16,24 @@
  * limitations under the License.
  */
 
-package com.cloudera.sqoop.mapreduce;
+package org.apache.sqoop.tool;
 
-import com.cloudera.sqoop.mapreduce.db.*;
+import java.sql.Connection;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+enum JDBCTransactionLevels {
+  TRANSACTION_NONE(Connection.TRANSACTION_NONE),
+  TRANSACTION_READ_UNCOMMITTED(Connection.TRANSACTION_READ_UNCOMMITTED),
+  TRANSACTION_READ_COMMITTED(Connection.TRANSACTION_READ_COMMITTED),
+  TRANSACTION_REPEATABLE_READ(Connection.TRANSACTION_REPEATABLE_READ),
+  TRANSACTION_SERIALIZABLE(Connection.TRANSACTION_SERIALIZABLE);
 
-/**
- * All tests for Sqoop new mapreduce-api (com.cloudera.sqoop.mapreduce).
- */
-public final class MapreduceTests {
+  private final int transactionLevelValue;
 
-  private MapreduceTests() { }
+  private JDBCTransactionLevels(int transactionLevelValue) {
+    this.transactionLevelValue = transactionLevelValue;
+  }
 
-  public static Test suite() {
-    TestSuite suite = new TestSuite(
-        "Tests for com.cloudera.sqoop.mapreduce");
-    suite.addTestSuite(TestImportJob.class);
-    suite.addTestSuite(TestDataDrivenDBInputFormat.class);
-    suite.addTestSuite(TestIntegerSplitter.class);
-    suite.addTestSuite(TestTextSplitter.class);
-
-    return suite;
+  public int getTransactionIsolationLevelValue() {
+    return transactionLevelValue;
   }
 }
-

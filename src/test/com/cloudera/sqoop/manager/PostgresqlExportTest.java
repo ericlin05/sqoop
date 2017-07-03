@@ -23,6 +23,7 @@ import com.cloudera.sqoop.testutil.ExportJobTestCase;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.Before;
+import org.junit.Test;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -35,6 +36,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 /**
  *
@@ -69,6 +73,10 @@ public class PostgresqlExportTest extends ExportJobTestCase {
     return false;
   }
 
+  private String getDropTableStatement(String tableName, String schema) {
+    return "DROP TABLE IF EXISTS " + quoteTableOrSchemaName(schema) + "." + quoteTableOrSchemaName(tableName);
+  }
+
   @Before
   public void setUp() {
     super.setUp();
@@ -94,6 +102,16 @@ public class PostgresqlExportTest extends ExportJobTestCase {
 
   @Override
   public void tearDown() {
+    try {
+      Statement stmt = connection.createStatement();
+      stmt.executeUpdate(getDropTableStatement(TABLE_NAME, SCHEMA_PUBLIC));
+      stmt.executeUpdate(getDropTableStatement(STAGING_TABLE_NAME, SCHEMA_PUBLIC));
+      stmt.executeUpdate(getDropTableStatement(TABLE_NAME, SCHEMA_SPECIAL));
+      stmt.executeUpdate(getDropTableStatement(STAGING_TABLE_NAME, SCHEMA_SPECIAL));
+    } catch(SQLException e) {
+      LOG.error("Can't clean up the database:", e);
+    }
+
     super.tearDown();
 
     try {
@@ -146,9 +164,9 @@ public class PostgresqlExportTest extends ExportJobTestCase {
           + "AS $$ "
           + "BEGIN "
           + "INSERT INTO "
-          + escapeTableOrSchemaName(SCHEMA_PUBLIC)
+          + quoteTableOrSchemaName(SCHEMA_PUBLIC)
           + "."
-          + escapeTableOrSchemaName(TABLE_NAME)
+          + quoteTableOrSchemaName(TABLE_NAME)
           + " ("
           + manager.escapeColName("id")
           +", "
@@ -195,7 +213,7 @@ public class PostgresqlExportTest extends ExportJobTestCase {
       // Create schema if not exists in dummy way (always create and ignore
       // errors.
       try {
-        st.executeUpdate("CREATE SCHEMA " + escapeTableOrSchemaName(schema));
+        st.executeUpdate("CREATE SCHEMA " + quoteTableOrSchemaName(schema));
         connection.commit();
       } catch (SQLException e) {
         LOG.info("Couldn't create schema " + schema + " (is o.k. as long as"
@@ -203,8 +221,8 @@ public class PostgresqlExportTest extends ExportJobTestCase {
         connection.rollback();
       }
 
-      String fullTableName = escapeTableOrSchemaName(schema)
-        + "." + escapeTableOrSchemaName(name);
+      String fullTableName = quoteTableOrSchemaName(schema)
+        + "." + quoteTableOrSchemaName(name);
 
       try {
         // Try to remove the table first. DROP TABLE IF EXISTS didn't
@@ -291,6 +309,7 @@ public class PostgresqlExportTest extends ExportJobTestCase {
     output.close();
   }
 
+  @Test
   public void testExport() throws IOException, SQLException {
     createTestFile("inputFile", new String[] {
       "2,Bob,2009-04-20,400,sales",
@@ -299,9 +318,10 @@ public class PostgresqlExportTest extends ExportJobTestCase {
 
     runExport(getArgv(true));
 
-    assertRowCount(2, escapeTableOrSchemaName(TABLE_NAME), connection);
+    assertRowCount(2, quoteTableOrSchemaName(TABLE_NAME), connection);
   }
 
+  @Test
   public void testExportUsingProcedure() throws IOException, SQLException {
     createTestFile("inputFile", new String[] {
         "2,Bob,2009-04-20,400,sales",
@@ -310,9 +330,10 @@ public class PostgresqlExportTest extends ExportJobTestCase {
 
     runExport(getArgv(false));
 
-    assertRowCount(2, escapeTableOrSchemaName(TABLE_NAME), connection);
+    assertRowCount(2, quoteTableOrSchemaName(TABLE_NAME), connection);
   }
 
+  @Test
   public void testExportStaging() throws IOException, SQLException {
     createTestFile("inputFile", new String[] {
       "2,Bob,2009-04-20,400,sales",
@@ -323,9 +344,10 @@ public class PostgresqlExportTest extends ExportJobTestCase {
 
     runExport(getArgv(true, extra));
 
-    assertRowCount(2, escapeTableOrSchemaName(TABLE_NAME), connection);
+    assertRowCount(2, quoteTableOrSchemaName(TABLE_NAME), connection);
   }
 
+  @Test
   public void testExportDirect() throws IOException, SQLException {
     createTestFile("inputFile", new String[] {
       "2,Bob,2009-04-20,400,sales",
@@ -336,9 +358,10 @@ public class PostgresqlExportTest extends ExportJobTestCase {
 
     runExport(getArgv(true, extra));
 
-    assertRowCount(2, escapeTableOrSchemaName(TABLE_NAME), connection);
+    assertRowCount(2, quoteTableOrSchemaName(TABLE_NAME), connection);
   }
 
+  @Test
   public void testExportCustomSchema() throws IOException, SQLException {
     createTestFile("inputFile", new String[] {
       "2,Bob,2009-04-20,400,sales",
@@ -353,11 +376,12 @@ public class PostgresqlExportTest extends ExportJobTestCase {
     runExport(getArgv(true, extra));
 
     assertRowCount(2,
-      escapeTableOrSchemaName(SCHEMA_SPECIAL)
-        + "." + escapeTableOrSchemaName(TABLE_NAME),
+      quoteTableOrSchemaName(SCHEMA_SPECIAL)
+        + "." + quoteTableOrSchemaName(TABLE_NAME),
       connection);
   }
 
+  @Test
   public void testExportCustomSchemaStaging() throws IOException, SQLException {
     createTestFile("inputFile", new String[] {
       "2,Bob,2009-04-20,400,sales",
@@ -375,11 +399,12 @@ public class PostgresqlExportTest extends ExportJobTestCase {
     runExport(getArgv(true, extra));
 
     assertRowCount(2,
-      escapeTableOrSchemaName(SCHEMA_SPECIAL)
-        + "." + escapeTableOrSchemaName(TABLE_NAME),
+      quoteTableOrSchemaName(SCHEMA_SPECIAL)
+        + "." + quoteTableOrSchemaName(TABLE_NAME),
       connection);
   }
 
+  @Test
   public void testExportCustomSchemaStagingClear()
     throws IOException, SQLException {
     createTestFile("inputFile", new String[] {
@@ -399,11 +424,12 @@ public class PostgresqlExportTest extends ExportJobTestCase {
     runExport(getArgv(true, extra));
 
     assertRowCount(2,
-      escapeTableOrSchemaName(SCHEMA_SPECIAL)
-        + "." + escapeTableOrSchemaName(TABLE_NAME),
+      quoteTableOrSchemaName(SCHEMA_SPECIAL)
+        + "." + quoteTableOrSchemaName(TABLE_NAME),
       connection);
   }
 
+  @Test
   public void testExportCustomSchemaDirect() throws IOException, SQLException {
     createTestFile("inputFile", new String[] {
       "2,Bob,2009-04-20,400,sales",
@@ -420,8 +446,8 @@ public class PostgresqlExportTest extends ExportJobTestCase {
     runExport(getArgv(true, extra));
 
     assertRowCount(2,
-      escapeTableOrSchemaName(SCHEMA_SPECIAL)
-        + "." + escapeTableOrSchemaName(TABLE_NAME),
+      quoteTableOrSchemaName(SCHEMA_SPECIAL)
+        + "." + quoteTableOrSchemaName(TABLE_NAME),
       connection);
   }
 
@@ -456,7 +482,7 @@ public class PostgresqlExportTest extends ExportJobTestCase {
     }
   }
 
-  public String escapeTableOrSchemaName(String tableName) {
+  public String quoteTableOrSchemaName(String tableName) {
     return "\"" + tableName + "\"";
   }
 }

@@ -25,8 +25,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -37,7 +35,6 @@ import org.apache.hadoop.mapred.FileOutputFormat;
 import org.apache.hadoop.mapred.JobClient;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.util.StringUtils;
-import org.apache.sqoop.manager.sqlserver.MSSQLTestUtils.*;
 
 import com.cloudera.sqoop.SqoopOptions;
 import com.cloudera.sqoop.SqoopOptions.InvalidOptionsException;
@@ -48,13 +45,38 @@ import com.cloudera.sqoop.testutil.ImportJobTestCase;
 import com.cloudera.sqoop.testutil.ReparseMapper;
 import com.cloudera.sqoop.tool.ImportTool;
 import com.cloudera.sqoop.util.ClassLoaderStack;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import static org.junit.Assert.fail;
 
 /**
  * Test that the parse() methods generated in user SqoopRecord implementations
- * work.
+ * work in SQL Server.
+ *
+ * This uses JDBC to import data from an SQLServer database to HDFS.
+ *
+ * Since this requires an SQLServer installation,
+ * this class is named in such a way that Sqoop's default QA process does
+ * not run it. You need to run this manually with
+ * -Dtestcase=SQLServerParseMethodsTest or -Dthirdparty=true.
+ *
+ * You need to put SQL Server JDBC driver library (sqljdbc4.jar) in a location
+ * where Sqoop will be able to access it (since this library cannot be checked
+ * into Apache's tree for licensing reasons) and set it's path through -Dsqoop.thirdparty.lib.dir.
+ *
+ * To set up your test environment:
+ *   Install SQL Server Express 2012
+ *   Create a database SQOOPTEST
+ *   Create a login SQOOPUSER with password PASSWORD and grant all
+ *   access for SQOOPTEST to SQOOPUSER.
+ *   Set these through -Dsqoop.test.sqlserver.connectstring.host_url, -Dsqoop.test.sqlserver.database and
+ *   -Dms.sqlserver.password
  */
-public class SQLServerParseMethodsManualTest extends ImportJobTestCase {
+public class SQLServerParseMethodsTest extends ImportJobTestCase {
 
+  @Before
   public void setUp() {
     super.setUp();
     Path p = new Path(getWarehouseDir());
@@ -64,6 +86,17 @@ public class SQLServerParseMethodsManualTest extends ImportJobTestCase {
     } catch (IOException e) {
       LOG.error("Setup fail with IOException: " + StringUtils.stringifyException(e));
       fail("Setup fail with IOException: " + StringUtils.stringifyException(e));
+    }
+  }
+
+  @After
+  public void tearDown() {
+    try {
+      dropTableIfExists(getTableName());
+    } catch (SQLException sqle) {
+      LOG.info("Table clean-up failed: " + sqle);
+    } finally {
+      super.tearDown();
     }
   }
 
@@ -170,6 +203,7 @@ public class SQLServerParseMethodsManualTest extends ImportJobTestCase {
     }
   }
 
+  @Test
   public void testDefaults() throws IOException {
     String[] types = { "INTEGER", "VARCHAR(32)", "INTEGER" };
     String[] vals = { "64", "'foo'", "128" };
@@ -178,6 +212,7 @@ public class SQLServerParseMethodsManualTest extends ImportJobTestCase {
     runParseTest(",", "\\n", "\\\"", "\\", false);
   }
 
+  @Test
   public void testRequiredEnclose() throws IOException {
     String[] types = { "INTEGER", "VARCHAR(32)", "INTEGER" };
     String[] vals = { "64", "'foo'", "128" };
@@ -186,6 +221,7 @@ public class SQLServerParseMethodsManualTest extends ImportJobTestCase {
     runParseTest(",", "\\n", "\\\"", "\\", true);
   }
 
+  @Test
   public void testStringEscapes() throws IOException {
     String[] types = { "VARCHAR(32)", "VARCHAR(32)", "VARCHAR(32)",
         "VARCHAR(32)", "VARCHAR(32)", };
@@ -196,6 +232,7 @@ public class SQLServerParseMethodsManualTest extends ImportJobTestCase {
     runParseTest(",", "\\n", "\\\'", "\\", false);
   }
 
+  @Test
   public void testNumericTypes() throws IOException {
     String[] types = { "INTEGER", "REAL", "FLOAT", "DATE", "TIME", "BIT", };
     String[] vals = { "42", "36.0", "127.1", "'2009-07-02'", "'11:24:00'",
@@ -211,9 +248,7 @@ public class SQLServerParseMethodsManualTest extends ImportJobTestCase {
   }
 
   protected String getConnectString() {
-    return System.getProperty(
-          "sqoop.test.sqlserver.connectstring.host_url",
-          "jdbc:sqlserver://sqlserverhost:1433");
+    return MSSQLTestUtils.getDBConnectString();
   }
 
   /**

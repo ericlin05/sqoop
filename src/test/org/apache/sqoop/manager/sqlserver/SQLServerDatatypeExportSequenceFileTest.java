@@ -29,7 +29,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.util.ReflectionUtils;
-import org.apache.sqoop.manager.sqlserver.MSSQLTestUtils.*;
 import org.apache.sqoop.manager.sqlserver.MSSQLTestDataFileParser.DATATYPES;
 
 import com.cloudera.sqoop.SqoopOptions;
@@ -38,15 +37,38 @@ import com.cloudera.sqoop.lib.SqoopRecord;
 import com.cloudera.sqoop.tool.CodeGenTool;
 import com.cloudera.sqoop.util.ClassLoaderStack;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 /**
-* Export sequence file to SQL Server test.
-*/
-public class SQLServerDatatypeExportSequenceFileManualTest
+ * Test to export sequence file to SQL Server.
+ *
+ * This uses JDBC to export data to an SQLServer database from HDFS.
+ *
+ * Since this requires an SQLServer installation,
+ * this class is named in such a way that Sqoop's default QA process does
+ * not run it. You need to run this manually with
+ * -Dtestcase=SQLServerDatatypeExportSequenceFileTest or -Dthirdparty=true.
+ *
+ * You need to put SQL Server JDBC driver library (sqljdbc4.jar) in a location
+ * where Sqoop will be able to access it (since this library cannot be checked
+ * into Apache's tree for licensing reasons) and set it's path through -Dsqoop.thirdparty.lib.dir.
+ *
+ * To set up your test environment:
+ *   Install SQL Server Express 2012
+ *   Create a database SQOOPTEST
+ *   Create a login SQOOPUSER with password PASSWORD and grant all
+ *   access for SQOOPTEST to SQOOPUSER.
+ *   Set these through -Dsqoop.test.sqlserver.connectstring.host_url, -Dsqoop.test.sqlserver.database and
+ *   -Dms.sqlserver.password
+ */
+public class SQLServerDatatypeExportSequenceFileTest
     extends ManagerCompatExport {
 
   private static Map jars = new HashMap();
 
-   @Override
+  @Override
   public void createFile(DATATYPES dt, String[] data) throws Exception {
     try {
       codeGen(dt);
@@ -138,11 +160,9 @@ public class SQLServerDatatypeExportSequenceFileManualTest
     jars.put(dt, jarFileName);
     return (getArgv(dt, "--class-name", className, "--jar-file",
      jarFileName));
-
-
-
   }
 
+  @Override
   protected String[] getArgv(DATATYPES dt) {
 
     String[] args = super.getArgv(dt);
@@ -173,7 +193,7 @@ public class SQLServerDatatypeExportSequenceFileManualTest
     codeGenArgv.add("--table");
     codeGenArgv.add(getTableName(dt));
     codeGenArgv.add("--connect");
-    codeGenArgv.add(getConnectString());
+    codeGenArgv.add(MSSQLTestUtils.getDBConnectString());
     codeGenArgv.add("--fields-terminated-by");
     codeGenArgv.add("\\t");
     codeGenArgv.add("--lines-terminated-by");
@@ -182,17 +202,6 @@ public class SQLServerDatatypeExportSequenceFileManualTest
     return codeGenArgv.toArray(new String[0]);
   }
 
-  /**
-  * Create the argv to pass to Sqoop.
-  *
-  * @param includeHadoopFlags
-  *            if true, then include -D various.settings=values
-  * @param rowsPerStmt
-  *            number of rows to export in a single INSERT statement.
-  * @param statementsPerTx
-  *            ## of statements to use in a transaction.
-  * @return the argv as an array of strings.
-  */
   protected String[] getArgv(DATATYPES dt, String... additionalArgv) {
     ArrayList<String> args = new ArrayList<String>();
 
@@ -232,7 +241,7 @@ public class SQLServerDatatypeExportSequenceFileManualTest
     args.add("--export-dir");
     args.add(getTablePath(dt).toString());
     args.add("--connect");
-    args.add(getConnectString());
+    args.add(MSSQLTestUtils.getDBConnectString());
     args.add("--fields-terminated-by");
     args.add("\\t");
     args.add("--lines-terminated-by");

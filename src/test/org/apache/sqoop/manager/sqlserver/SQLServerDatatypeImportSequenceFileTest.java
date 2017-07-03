@@ -30,21 +30,44 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.util.StringUtils;
-import org.apache.sqoop.manager.sqlserver.MSSQLTestUtils.*;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import com.cloudera.sqoop.SqoopOptions;
 import com.cloudera.sqoop.testutil.ManagerCompatTestCase;
 import org.apache.sqoop.manager.sqlserver.MSSQLTestDataFileParser.DATATYPES;
 import org.apache.sqoop.manager.sqlserver.MSSQLTestData.KEY_STRINGS;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 /**
- * Testing import of a sequence file to SQL Server.
+ * Test importing sequence file from SQL Server.
+ *
+ * This uses JDBC to import data from an SQLServer database to HDFS.
+ *
+ * Since this requires an SQLServer installation,
+ * this class is named in such a way that Sqoop's default QA process does
+ * not run it. You need to run this manually with
+ * -Dtestcase=SQLServerDatatypeImportSequenceFileTest or -Dthirdparty=true.
+ *
+ * You need to put SQL Server JDBC driver library (sqljdbc4.jar) in a location
+ * where Sqoop will be able to access it (since this library cannot be checked
+ * into Apache's tree for licensing reasons) and set it's path through -Dsqoop.thirdparty.lib.dir.
+ *
+ * To set up your test environment:
+ *   Install SQL Server Express 2012
+ *   Create a database SQOOPTEST
+ *   Create a login SQOOPUSER with password PASSWORD and grant all
+ *   access for SQOOPTEST to SQOOPUSER.
+ *   Set these through -Dsqoop.test.sqlserver.connectstring.host_url, -Dsqoop.test.sqlserver.database and
+ *   -Dms.sqlserver.password
  */
-public class SQLServerDatatypeImportSequenceFileManualTest extends
+public class SQLServerDatatypeImportSequenceFileTest extends
     ManagerCompatTestCase {
 
   public static final Log LOG = LogFactory.getLog(
-      SQLServerDatatypeImportSequenceFileManualTest.class.getName());
+      SQLServerDatatypeImportSequenceFileTest.class.getName());
   private static MSSQLTestDataFileParser tdfs;
   private static Map report;
 
@@ -85,9 +108,7 @@ public class SQLServerDatatypeImportSequenceFileManualTest extends
   }
 
   protected String getConnectString() {
-    return System.getProperty(
-          "sqoop.test.sqlserver.connectstring.host_url",
-          "jdbc:sqlserver://sqlserverhost:1433");
+    return MSSQLTestUtils.getDBConnectString();
   }
 
   /**
@@ -122,6 +143,7 @@ public class SQLServerDatatypeImportSequenceFileManualTest extends
     return opts;
   }
 
+  @Before
   public void setUp() {
     try {
       super.setUp();
@@ -151,6 +173,7 @@ public class SQLServerDatatypeImportSequenceFileManualTest extends
     }
   }
 
+  @After
   public void tearDown() {
     try {
       super.tearDown();
@@ -209,6 +232,7 @@ public class SQLServerDatatypeImportSequenceFileManualTest extends
   verifyType("BIT", getFalseBoolLiteralSqlInput(), getFalseBoolSeqOutput());
   }
 
+  @Test
   public void testBoolean() {
     try {
       super.testBoolean();
@@ -218,6 +242,7 @@ public class SQLServerDatatypeImportSequenceFileManualTest extends
     }
   }
 
+  @Test
   public void testBoolean2() {
     try {
       super.testBoolean2();
@@ -227,6 +252,7 @@ public class SQLServerDatatypeImportSequenceFileManualTest extends
     }
   }
 
+  @Test
   public void testBoolean3() {
     try {
       super.testBoolean3();
@@ -236,6 +262,7 @@ public class SQLServerDatatypeImportSequenceFileManualTest extends
     }
   }
 
+  @Test
   public void testDouble1() {
     try {
       super.testDouble1();
@@ -255,6 +282,7 @@ public class SQLServerDatatypeImportSequenceFileManualTest extends
     }
   }
 
+  @Test
   public void testClob1() {
     try {
       super.testClob1();
@@ -264,6 +292,7 @@ public class SQLServerDatatypeImportSequenceFileManualTest extends
     }
   }
 
+  @Test
   public void testBlob1() {
     try {
     super.testBlob1();
@@ -273,6 +302,7 @@ public class SQLServerDatatypeImportSequenceFileManualTest extends
     }
   }
 
+  @Test
   public void testLongVarChar() {
     try {
       super.testLongVarChar();
@@ -282,6 +312,7 @@ public class SQLServerDatatypeImportSequenceFileManualTest extends
     }
   }
 
+  @Test
   public void testTimestamp1() {
     try {
       super.testTimestamp1();
@@ -291,6 +322,7 @@ public class SQLServerDatatypeImportSequenceFileManualTest extends
     }
   }
 
+  @Test
   public void testTimestamp2() {
     try {
       super.testTimestamp2();
@@ -300,6 +332,7 @@ public class SQLServerDatatypeImportSequenceFileManualTest extends
     }
   }
 
+  @Test
   public void testTimestamp3() {
     try {
       super.testTimestamp3();
@@ -309,6 +342,7 @@ public class SQLServerDatatypeImportSequenceFileManualTest extends
     }
   }
 
+  @Test
   public void testVarBinary() {
     if (!supportsVarBinary()) {
       return;
@@ -316,6 +350,7 @@ public class SQLServerDatatypeImportSequenceFileManualTest extends
     dataTypeTest(DATATYPES.VARBINARY);
   }
 
+  @Test
   public void testTime() {
     if (!supportsTime()) {
       skipped = true;
@@ -360,23 +395,29 @@ public class SQLServerDatatypeImportSequenceFileManualTest extends
     dataTypeTest(DATATYPES.DATETIMEOFFSET);
   }
 
+  @Test
   public void testDecimal() {
     dataTypeTest(DATATYPES.DECIMAL);
   }
 
+  @Test
   public void testNumeric() {
     dataTypeTest(DATATYPES.NUMERIC);
   }
 
+  @Test
   public void testNumeric1() {
   }
 
+  @Test
   public void testNumeric2() {
   }
 
+  @Test
   public void testDecimal1() {
   }
 
+  @Test
   public void testDecimal2() {
   }
 
@@ -418,7 +459,7 @@ public class SQLServerDatatypeImportSequenceFileManualTest extends
   }
 
   @Test
-    public void testTinyInt2() {
+  public void testTinyInt2() {
   }
 
   @Test
@@ -436,6 +477,7 @@ public class SQLServerDatatypeImportSequenceFileManualTest extends
     dataTypeTest(DATATYPES.DATE);
   }
 
+  @Test
   public void testMoney() {
     dataTypeTest(DATATYPES.MONEY);
   }
@@ -475,10 +517,12 @@ public class SQLServerDatatypeImportSequenceFileManualTest extends
     dataTypeTest(DATATYPES.NVARCHAR);
   }
 
+  @Test
   public void testImage() {
     dataTypeTest(DATATYPES.IMAGE);
   }
 
+  @Test
   public void testBinary() {
     dataTypeTest(DATATYPES.BINARY);
   }

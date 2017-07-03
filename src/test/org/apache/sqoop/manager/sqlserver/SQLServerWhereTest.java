@@ -25,31 +25,52 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.hadoop.util.StringUtils;
-import org.apache.sqoop.manager.sqlserver.MSSQLTestUtils.*;
 
 import com.cloudera.sqoop.SqoopOptions;
 import com.cloudera.sqoop.SqoopOptions.InvalidOptionsException;
-import com.cloudera.sqoop.manager.JdbcMySQLExportTest;
 import com.cloudera.sqoop.orm.CompilationManager;
 import com.cloudera.sqoop.testutil.CommonArgs;
 import com.cloudera.sqoop.testutil.ImportJobTestCase;
 import com.cloudera.sqoop.testutil.SeqFileReader;
 import com.cloudera.sqoop.tool.ImportTool;
 import com.cloudera.sqoop.util.ClassLoaderStack;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 /**
- * Test that --where works in Sqoop. Methods essentially copied out of the other
- * Test* classes.
+ * Test that --where works in SQL Server.
+ *
+ * This uses JDBC to import data from an SQLServer database to HDFS.
+ *
+ * Since this requires an SQLServer installation,
+ * this class is named in such a way that Sqoop's default QA process does
+ * not run it. You need to run this manually with
+ * -Dtestcase=SQLServerWhereTest or -Dthirdparty=true.
+ *
+ * You need to put SQL Server JDBC driver library (sqljdbc4.jar) in a location
+ * where Sqoop will be able to access it (since this library cannot be checked
+ * into Apache's tree for licensing reasons) and set it's path through -Dsqoop.thirdparty.lib.dir.
+ *
+ * To set up your test environment:
+ *   Install SQL Server Express 2012
+ *   Create a database SQOOPTEST
+ *   Create a login SQOOPUSER with password PASSWORD and grant all
+ *   access for SQOOPTEST to SQOOPUSER.
+ *   Set these through -Dsqoop.test.sqlserver.connectstring.host_url, -Dsqoop.test.sqlserver.database and
+ *   -Dms.sqlserver.password
  */
-public class SQLServerWhereManualTest extends ImportJobTestCase {
+public class SQLServerWhereTest extends ImportJobTestCase {
 
+ @Before
   public void setUp(){
     super.setUp();
     MSSQLTestUtils utils = new MSSQLTestUtils();
@@ -63,6 +84,7 @@ public class SQLServerWhereManualTest extends ImportJobTestCase {
 
   }
 
+  @After
   public void tearDown(){
     super.tearDown();
     MSSQLTestUtils utils = new MSSQLTestUtils();
@@ -205,6 +227,7 @@ public class SQLServerWhereManualTest extends ImportJobTestCase {
   }
  }
 
+  @Test
  public void testSingleClauseWhere() throws IOException {
   String whereClause = "L_ORDERKEY > 0 ";
   runWhereTest(whereClause,
@@ -212,6 +235,7 @@ public class SQLServerWhereManualTest extends ImportJobTestCase {
       + "\n", 4, 10);
  }
 
+  @Test
  public void testMultiClauseWhere() throws IOException {
   String whereClause = "L_ORDERKEY > 1 AND L_PARTKEY < 4";
   runWhereTest(whereClause,
@@ -225,9 +249,7 @@ public class SQLServerWhereManualTest extends ImportJobTestCase {
  }
 
  protected String getConnectString() {
-  return System.getProperty(
-          "sqoop.test.sqlserver.connectstring.host_url",
-          "jdbc:sqlserver://sqlserverhost:1433");
+  return MSSQLTestUtils.getDBConnectString();
  }
 
  /**
