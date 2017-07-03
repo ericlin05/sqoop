@@ -1083,4 +1083,45 @@ public class TestExport extends ExportJobTestCase {
     assertColMinAndMax(forIdx(0), genInt);
     assertColMinAndMax(forIdx(1), new NullColumnGenerator());
   }
+
+  /**
+   * This test case will test Time value of "10:01:01.1234" be exported into db table.
+   *
+   * Due to SQOOP-3039, this test will fail without the patch, so this test covers the use case.
+   *
+   * Currently I am unable to test the exported value due to TIME(x) will fail when creating
+   * table, so I have to use TIME with default precision of 0, which means we have data lost in this test case
+   *
+   * @throws IOException
+   * @throws SQLException
+   */
+  @Test
+  public void testTimeNanoSecondExportSuccessfully() throws IOException, SQLException {
+    final int TOTAL_RECORDS = 10;
+
+    // based on http://hsqldb.org/doc/guide/sqlgeneral-chapt.html#sgc_datetime_types
+    // TIME(x) should be supported in HSQLDB, however, for some reason I can use it here
+    // as the CREATE TABLE statement will fail, have to use TIME instead (without precision)
+    class TimeColumnGenerator implements ColumnGenerator {
+      public String getExportText(int rowNum) {
+        return "10:01:" + pad(rowNum) + ".1234";
+      }
+      public String getVerifyText(int rowNum) {
+        return "10:01:" + pad(rowNum) + ".1234";
+      }
+      public String getType() {
+        return "TIME";
+      }
+    }
+
+    ColumnGenerator genInteger = new IntColumnGenerator();
+    ColumnGenerator genTime = new TimeColumnGenerator();
+
+    createTextFile(0, TOTAL_RECORDS, false, genInteger, genTime);
+    createTable(genInteger, genTime);
+    runExport(getArgv(true, 10, 10));
+    verifyExport(TOTAL_RECORDS);
+    assertColMinAndMax(forIdx(0), genInteger);
+    // unable to test the data exported for Time column due to precision lost
+  }
 }
