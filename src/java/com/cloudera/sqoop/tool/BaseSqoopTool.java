@@ -170,6 +170,8 @@ public abstract class BaseSqoopTool
           org.apache.sqoop.tool.BaseSqoopTool.INCREMENT_TYPE_ARG;
   public static final String INCREMENT_COL_ARG =
           org.apache.sqoop.tool.BaseSqoopTool.INCREMENT_COL_ARG;
+  public static final String INCREMENT_COL_ARG_EXPR =
+      org.apache.sqoop.tool.BaseSqoopTool.INCREMENT_COL_EXPR_ARG;
   public static final String INCREMENT_LAST_VAL_ARG =
           org.apache.sqoop.tool.BaseSqoopTool.INCREMENT_LAST_VAL_ARG;
   public static final String HBASE_TABLE_ARG =

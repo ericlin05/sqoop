@@ -193,6 +193,9 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
         break;
       }
       LOG.info("  --check-column " + options.getIncrementalTestColumn());
+      if(options.hasIncrementalTestColumnExpr()) {
+        LOG.info("  --check-column-expr " + options.getIncrementalTestColumnExpr());
+      }
       LOG.info("  --last-value " + options.getIncrementalLastValue());
       LOG.info("(Consider saving this with 'sqoop job --create')");
     }
@@ -360,9 +363,16 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
           checkColumnType);
     }
 
-    String checkColName = manager.escapeColName(
-        options.getIncrementalTestColumn());
-    LOG.info("Incremental import based on column " + checkColName);
+    String checkColName;
+    if(options.hasIncrementalTestColumnExpr()) {
+      checkColName = options.getIncrementalTestColumnExpr();
+      LOG.info("Incremental import based on column expression: " + checkColName);
+    } else {
+      checkColName = manager.escapeColName(
+          options.getIncrementalTestColumn());
+      LOG.info("Incremental import based on column: " + checkColName);
+    }
+
     if (null != prevEndpoint) {
       if (prevEndpoint.equals(nextIncrementalValue)) {
         LOG.info("No new rows detected since last import.");
@@ -414,12 +424,14 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
       }
 
       String newConstraints = sb.toString();
+      LOG.debug("New constraint: " + newConstraints);
       options.setWhereClause(newConstraints);
     } else {
       // Incremental based import
       sb.append(" AND $CONDITIONS");
       String newQuery = options.getSqlQuery().replace(
         "$CONDITIONS", sb.toString());
+      LOG.debug("New query: " + newQuery);
       options.setSqlQuery(newQuery);
     }
     // Save this state for next time.
@@ -801,6 +813,11 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
         .withDescription("Source column to check for incremental change")
         .withLongOpt(INCREMENT_COL_ARG)
         .create());
+    incrementalOpts.addOption(OptionBuilder.withArgName("column-expr")
+        .hasArg()
+        .withDescription("The column function expression to check for incremental change")
+        .withLongOpt(INCREMENT_COL_EXPR_ARG)
+        .create());
     incrementalOpts.addOption(OptionBuilder.withArgName("value")
         .hasArg()
         .withDescription("Last imported value in the incremental check column")
@@ -877,6 +894,10 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
 
     if (in.hasOption(INCREMENT_COL_ARG)) {
       out.setIncrementalTestColumn(in.getOptionValue(INCREMENT_COL_ARG));
+    }
+
+    if (in.hasOption(INCREMENT_COL_EXPR_ARG)) {
+      out.setIncrementalTestColumnExpr(in.getOptionValue(INCREMENT_COL_EXPR_ARG));
     }
 
     if (in.hasOption(INCREMENT_LAST_VAL_ARG)) {

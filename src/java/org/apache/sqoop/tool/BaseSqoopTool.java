@@ -186,6 +186,7 @@ public abstract class BaseSqoopTool extends com.cloudera.sqoop.tool.SqoopTool {
   // Arguments for incremental imports.
   public static final String INCREMENT_TYPE_ARG = "incremental";
   public static final String INCREMENT_COL_ARG = "check-column";
+  public static final String INCREMENT_COL_EXPR_ARG = "check-column-expr";
   public static final String INCREMENT_LAST_VAL_ARG = "last-value";
 
   // Arguments for all table imports.

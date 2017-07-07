@@ -276,6 +276,10 @@ public class SqoopOptions implements Cloneable {
 
   // col to filter on for incremental imports.
   @StoredAsProperty("incremental.col") private String incrementalTestCol;
+
+  // col expression for column incrementalTestCol
+  @StoredAsProperty("incremental.col.expr") private String incrementalTestColExpr;
+
   // incremental import mode we're using.
   @StoredAsProperty("incremental.mode")
   private IncrementalMode incrementalMode;
@@ -2219,6 +2223,26 @@ public class SqoopOptions implements Cloneable {
    */
   public String getIncrementalTestColumn() {
     return this.incrementalTestCol;
+  }
+
+  /**
+   * Set the function expression for column of the import source table to check for incremental import
+   * state.
+   */
+  public void setIncrementalTestColumnExpr(String expr) {
+    this.incrementalTestColExpr = expr;
+  }
+
+  /**
+   * Return the function expression of the column of the import source table
+   * to check for incremental import state.
+   */
+  public String getIncrementalTestColumnExpr() {
+    return this.incrementalTestColExpr;
+  }
+
+  public boolean hasIncrementalTestColumnExpr() {
+    return this.incrementalTestColExpr != null;
   }
 
   /**
