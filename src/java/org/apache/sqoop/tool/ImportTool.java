@@ -210,7 +210,11 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
     String query;
 
     sb.append("SELECT MAX(");
-    sb.append(manager.escapeColName(options.getIncrementalTestColumn()));
+    if(options.hasIncrementalTestColumnExpr()) {
+      sb.append(options.getIncrementalTestColumnExpr());
+    } else {
+      sb.append(manager.escapeColName(options.getIncrementalTestColumn()));
+    }
     sb.append(") FROM ");
 
     if (options.getTableName() != null) {
@@ -366,7 +370,7 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
     String checkColName;
     if(options.hasIncrementalTestColumnExpr()) {
       checkColName = options.getIncrementalTestColumnExpr();
-      LOG.info("Incremental import based on column expression: " + checkColName);
+      LOG.info("Incremental import based on column function: " + checkColName);
     } else {
       checkColName = manager.escapeColName(
           options.getIncrementalTestColumn());
