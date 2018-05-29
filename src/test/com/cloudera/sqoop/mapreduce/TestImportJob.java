@@ -384,4 +384,104 @@ public class TestImportJob extends ImportJobTestCase {
       LOG.info("Got exceptional return (expected: ok). msg is: " + e);
     }
   }
+
+  @Test
+  public void testIncrementalAppendImportWithColumnFunction() throws IOException {
+    // Make sure that if a MapReduce job to do the import fails due
+    // to an IOException, we tell the user about it.
+
+    // Create a table to attempt to import.
+    String [] names = { "id", "data" };
+    String [] types = { "INT NOT NULL PRIMARY KEY", "VARCHAR(32)" };
+    String [] vals = { "2" , "'test_data'" };
+    this.createTableWithColTypesAndNames(names, types, vals);
+
+    Configuration conf = new Configuration();
+
+    // Make the output dir exist so we know the job will fail via IOException.
+    Path outputPath = new Path(new Path(getWarehouseDir()), getTableName());
+    FileSystem fs = FileSystem.getLocal(conf);
+    fs.mkdirs(outputPath);
+
+    assertTrue(fs.exists(outputPath));
+
+    String [] argv = getArgv(true, null, conf);
+    argv = Arrays.copyOf(argv, argv.length + 8);
+    argv[argv.length - 8] = "--incremental";
+    argv[argv.length - 7] = "append";
+    argv[argv.length - 6] = "--last-value";
+    argv[argv.length - 5] = "1";
+    argv[argv.length - 4] = "--check-column";
+    argv[argv.length - 3] = "id";
+    argv[argv.length - 2] = "-check-column-expr";
+    argv[argv.length - 1] = "id";
+
+    Sqoop importer = new Sqoop(new ImportTool());
+    try {
+      int ret = Sqoop.runSqoop(importer, argv);
+      assertTrue("Expected job to go through.", 0==ret);
+
+      assertTrue(fs.exists(outputPath));
+      String[] output = getContent(conf, outputPath);
+      assertEquals("Expected output and actual output should be same.",
+          "101,test_data" + "\n",
+          output[0]);
+
+      LOG.info("=============== OUTPUT DATA: " + output[0]);
+    } catch (Exception e) {
+      // In debug mode, IOException is wrapped in RuntimeException.
+      assertTrue("Expected job to go through, but failed.", 0==1);
+      LOG.info("Got exceptional return (expected: ok). msg is: " + e);
+    }
+  }
+
+
+  @Test
+  public void testIncrementalImportWithColumnFunction2() throws IOException {
+    // Make sure that if a MapReduce job to do the import fails due
+    // to an IOException, we tell the user about it.
+
+    // Create a table to attempt to import.
+    String [] names = { "id", "data" };
+    String [] types = { "INT NOT NULL PRIMARY KEY", "VARCHAR(32)" };
+    String [] vals = { "1" , "'test_data'" };
+    this.createTableWithColTypesAndNames(names, types, vals);
+
+    Configuration conf = new Configuration();
+
+    // Make the output dir exist so we know the job will fail via IOException.
+    Path outputPath = new Path(new Path(getWarehouseDir()), getTableName());
+    FileSystem fs = FileSystem.getLocal(conf);
+    fs.mkdirs(outputPath);
+
+    assertTrue(fs.exists(outputPath));
+
+    String [] argv = getArgv(true, null, conf);
+    argv = Arrays.copyOf(argv, argv.length + 8);
+    argv[argv.length - 8] = "--incremental";
+    argv[argv.length - 7] = "append";
+    argv[argv.length - 6] = "--last-value";
+    argv[argv.length - 5] = "0";
+    argv[argv.length - 4] = "--check-column";
+    argv[argv.length - 3] = "id";
+    argv[argv.length - 2] = "--check-column-expr";
+    argv[argv.length - 1] = "id";
+
+    Sqoop importer = new Sqoop(new ImportTool());
+    try {
+      int ret = Sqoop.runSqoop(importer, argv);
+      assertTrue("Expected job to go through.", 0==ret);
+
+      assertTrue(fs.exists(outputPath));
+      String[] output = getContent(conf, outputPath);
+      assertEquals("Expected output and actual output should be same.",
+          "1,test_data" + "\n",
+          output[0]);
+      LOG.info("=============== OUTPUT DATA: " + output[0]);
+    } catch (Exception e) {
+      // In debug mode, IOException is wrapped in RuntimeException.
+      assertTrue("Expected job to go through, but failed.", 0==1);
+      LOG.info("Got exceptional return (expected: ok). msg is: " + e);
+    }
+  }
 }
