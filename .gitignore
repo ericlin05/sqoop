@@ -36,3 +36,4 @@ target
 /conf/managers.d
 /conf/tools.d
 /tags
+/out

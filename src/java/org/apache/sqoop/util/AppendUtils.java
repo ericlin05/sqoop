@@ -43,7 +43,7 @@ public class AppendUtils {
   private static final String FILEPART_SEPARATOR = "-";
   private static final String FILEEXT_SEPARATOR = ".";
 
-  private static final Pattern DATA_PART_PATTERN = Pattern.compile("part.*-([0-9]{" + PARTITION_DIGITS + "}+).*");
+  private static final String DATA_PART_PATTERN_PREFIX = "part";
 
   private ImportJobContext context = null;
 
@@ -59,7 +59,6 @@ public class AppendUtils {
 
     SqoopOptions options = context.getOptions();
     Path tempDir = context.getDestination();
-
     // Try in this order: target-dir or warehouse-dir
     Path userDestDir = null;
     if (options.getTargetDir() != null) {
@@ -115,7 +114,7 @@ public class AppendUtils {
       for (FileStatus fileStat : existingFiles) {
         if (!fileStat.isDir()) {
           String filename = fileStat.getPath().getName();
-          Matcher mat = DATA_PART_PATTERN.matcher(filename);
+          Matcher mat = getDataFileNamePattern().matcher(filename);
           if (mat.matches()) {
             int thisPart = Integer.parseInt(mat.group(1));
             if (thisPart >= nextPartition) {
@@ -171,7 +170,6 @@ public class AppendUtils {
     for (FileStatus fileStatus : sourceFiles) {
       String        sourceFilename = fileStatus.getPath().getName();
       StringBuilder destFilename   = new StringBuilder();
-
       if (fileStatus.isDir()) {    // move all subdirectories
         // pass target dir as initial dest to prevent nesting inside preexisting dir
         if (!fs.exists(targetDir) && fs.rename(fileStatus.getPath(), targetDir)) {
@@ -204,7 +202,7 @@ public class AppendUtils {
 
           LOG.debug("Directory: " + sourceFilename + " renamed to: " + destPath.getName());
         }
-      } else if (DATA_PART_PATTERN.matcher(sourceFilename).matches()) {    // move only matching top-level files
+      } else if (getDataFileNamePattern().matcher(sourceFilename).matches()) {    // move only matching top-level files
         do {
           // clear the builder in case this isn't the first iteration
           destFilename.setLength(0);
@@ -220,7 +218,7 @@ public class AppendUtils {
             destFilename.append(getFileExtension(sourceFilename));
         } while (!fs.rename(fileStatus.getPath(), new Path(targetDir, destFilename.toString())));
 
-        LOG.debug("Filename: " + sourceFilename + " repartitioned to: " + destFilename.toString());
+        LOG.info("Filename: " + sourceFilename + " repartitioned to: " + destFilename.toString());
       } else {
         // Generated Parquet files do not follow the pattern "part-m-([0-9]{5}).ext", so that these
         // files cannot be moved to target directory expectedly. We simply check file extension.
@@ -276,4 +274,21 @@ public class AppendUtils {
     return new Path(tempDir);
   }
 
+  /**
+   * Return the Pattern of the file name that will end up in the target directory
+   *
+   * Take into account that user might pass mapreduce.output.basename, which should
+   * override the default filename prefix of "part"
+   *
+   * @return Pattern
+   */
+  private Pattern getDataFileNamePattern() {
+    String prefix = context.getOptions().getConf().get("mapreduce.output.basename");
+
+    if(null == prefix || prefix.length() == 0) {
+      prefix = DATA_PART_PATTERN_PREFIX;
+    }
+
+    return Pattern.compile(prefix + ".*-([0-9]{" + PARTITION_DIGITS + "}+).*");
+  }
 }
