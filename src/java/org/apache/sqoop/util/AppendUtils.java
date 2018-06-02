@@ -43,7 +43,7 @@ public class AppendUtils {
   private static final String FILEPART_SEPARATOR = "-";
   private static final String FILEEXT_SEPARATOR = ".";
 
-  private static final String DATA_PART_PATTERN_PREFIX = "part";
+  public static final String DATA_PART_PATTERN_PREFIX = "part";
 
   private ImportJobContext context = null;
 

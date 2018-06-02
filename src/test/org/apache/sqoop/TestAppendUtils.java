@@ -148,7 +148,7 @@ public class TestAppendUtils extends ImportJobTestCase {
   }
 
   private FileStatus[] listFiles(FileSystem fs, Path path) throws IOException {
-    return listFiles(fs, path, "part");
+    return listFiles(fs, path, AppendUtils.DATA_PART_PATTERN_PREFIX);
   }
 
   private class StatusPathComparator implements Comparator<FileStatus> {
@@ -188,7 +188,7 @@ public class TestAppendUtils extends ImportJobTestCase {
   }
 
   public void runAppendTest(ArrayList args, Path outputPath) throws IOException {
-    runAppendTest(args, outputPath, "part");
+    runAppendTest(args, outputPath, AppendUtils.DATA_PART_PATTERN_PREFIX);
   }
 
   /**
