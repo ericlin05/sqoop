@@ -114,7 +114,7 @@ public class Time extends java.sql.Time {
    *           <code>hh:mm:ss.fffffffff</code> format
    */
   @Override
-  public String toString () {
+  public String toString() {
     Timestamp ts = new Timestamp(
         70, 0, 1,
         this.getHours(), this.getMinutes(), this.getSeconds(),

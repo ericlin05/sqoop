@@ -22,7 +22,7 @@ import junit.framework.TestCase;
 
 public class TestTime extends TestCase {
 
-  public void testConstructor1()  {
+  public void testConstructor1() {
     Time t = new Time(12, 13, 14, 1234);
 
     assertEquals(12, t.getHours());
@@ -31,7 +31,7 @@ public class TestTime extends TestCase {
     assertEquals(1234, t.getNanos());
   }
 
-  public void testValueOf1()  {
+  public void testValueOf1() {
     Time t = Time.valueOf("12:13:14.123400");
 
     assertEquals(12, t.getHours());
@@ -40,7 +40,7 @@ public class TestTime extends TestCase {
     assertEquals(123400000, t.getNanos());
   }
 
-  public void testValueOf2()  {
+  public void testValueOf2() {
     Time t = Time.valueOf("12:13:14");
 
     assertEquals(12, t.getHours());
@@ -49,7 +49,7 @@ public class TestTime extends TestCase {
     assertEquals(0, t.getNanos());
   }
 
-  public void testValueOfNanosTooLongCappedAt9()  {
+  public void testValueOfNanosTooLongCappedAt9() {
     Time t = Time.valueOf("12:13:14.12345678910");
 
     assertEquals(12, t.getHours());
