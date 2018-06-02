@@ -228,7 +228,7 @@ public class AppendUtils {
           fileMoved = fs.rename(fileStatus.getPath(), targetFilename);
         }
         if (!fileMoved) {    // ignore everything else
-          LOG.debug("Filename: " + sourceFilename + " ignored");
+          LOG.info("Filename: " + sourceFilename + " ignored");
         }
       }
     }
