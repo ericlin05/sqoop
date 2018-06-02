@@ -22,7 +22,7 @@ import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Time;
+import org.apache.sqoop.orm.Time;
 import java.sql.Timestamp;
 
 import org.apache.hadoop.io.BytesWritable;
@@ -99,8 +99,25 @@ public final class JdbcWritableBridge {
     }
   }
 
+  /**
+   * getTime function from ResultSet class returns java.sql.Time object,
+   * we need to convert it to org.apache.sqoop.orm.Time using java.sql.Timestamp
+   * class to capture the nano seconds - required by SQOOP-3039
+   *
+   * @param colNum int
+   * @param r ResultSet
+   * @return org.apache.sqoop.orm.Time
+   * @throws SQLException
+   */
   public static Time readTime(int colNum, ResultSet r) throws SQLException {
-    return r.getTime(colNum);
+    // use the Timestamp class so that nano seconds will be captured
+    java.sql.Timestamp t = r.getTimestamp(colNum);
+    String[] split = t.toString().split(" ");
+    if(split.length == 2) {
+      return Time.valueOf(split[1]);
+    }
+
+    return new Time(t.getTime());
   }
 
   public static Timestamp readTimestamp(int colNum, ResultSet r)
