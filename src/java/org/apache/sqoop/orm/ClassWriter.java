@@ -1785,6 +1785,38 @@ public class ClassWriter {
       LOG.debug("sourceFilename is " + sourceFilename);
     }
 
+    // SQOOP-3042 - Sqoop does not clear compile directory under /tmp/sqoop-<username>/compile
+    // Add shutdown hook so that all files under the jar output dir can be cleared
+    // the directory itself has been added deleteOnExit, so we don't need to worry about it
+    if(SqoopOptions.isTmpDirDeleteOnExit()) {
+      final String tmpDir = options.getJarOutputDir();
+      Runtime.getRuntime().addShutdownHook(new Thread() {
+        @Override
+        public void run() {
+          LOG.debug("Adding shutdown hook to remove source compilation files under " + tmpDir);
+
+          try {
+            File jarDir = new File(tmpDir);
+            File[] jarFiles = jarDir.listFiles();
+            if (jarFiles != null && jarFiles.length > 0) {
+              for (File f : jarFiles) {
+                if (f.isFile()) {
+                  if (f.delete()) {
+                    LOG.debug("Removing compiled file: " + f.getPath());
+                  } else {
+                    LOG.error("Unable to delete compiled file " + f.getPath());
+                  }
+                }
+              }
+            }
+          } catch (Exception x) {
+            // File permission problems are caught here.
+            LOG.error("Remove compiled files failed with exception: " + x.getMessage());
+          }
+        }
+      });
+    }
+
     compileManager.addSourceFile(sourceFilename);
 
     // Create any missing parent directories.
