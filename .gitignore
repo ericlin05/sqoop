@@ -27,6 +27,7 @@
 nb-configuration.xml
 patch-process
 target
+out
 
 # Sqoop1 specific
 .ant-targets-build.xml
