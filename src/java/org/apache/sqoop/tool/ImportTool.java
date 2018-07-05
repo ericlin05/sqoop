@@ -199,7 +199,7 @@ public class ImportTool extends BaseSqoopTool {
         break;
       }
       LOG.info("  --check-column " + options.getIncrementalTestColumn());
-      if(options.hasIncrementalTestColumnExpr()) {
+      if (options.hasIncrementalTestColumnExpr()) {
         LOG.info("  --check-column-expr " + options.getIncrementalTestColumnExpr());
       }
       LOG.info("  --last-value " + options.getIncrementalLastValue());
@@ -216,7 +216,7 @@ public class ImportTool extends BaseSqoopTool {
     String query;
 
     sb.append("SELECT MAX(");
-    if(options.hasIncrementalTestColumnExpr()) {
+    if (options.hasIncrementalTestColumnExpr()) {
       sb.append(options.getIncrementalTestColumnExpr());
     } else {
       sb.append(manager.escapeColName(options.getIncrementalTestColumn()));
@@ -374,7 +374,7 @@ public class ImportTool extends BaseSqoopTool {
     }
 
     String checkColName;
-    if(options.hasIncrementalTestColumnExpr()) {
+    if (options.hasIncrementalTestColumnExpr()) {
       checkColName = options.getIncrementalTestColumnExpr();
       LOG.info("Incremental import based on column function: " + checkColName);
     } else {
