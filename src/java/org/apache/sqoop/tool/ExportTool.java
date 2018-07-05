@@ -19,6 +19,8 @@
 package org.apache.sqoop.tool;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.cli.CommandLine;
@@ -26,21 +28,31 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.cloudera.sqoop.SqoopOptions;
-import com.cloudera.sqoop.SqoopOptions.InvalidOptionsException;
-import com.cloudera.sqoop.SqoopOptions.UpdateMode;
-import com.cloudera.sqoop.cli.RelatedOptions;
-import com.cloudera.sqoop.cli.ToolOptions;
-import com.cloudera.sqoop.manager.ExportJobContext;
-import com.cloudera.sqoop.util.ExportException;
+import org.apache.sqoop.SqoopOptions;
+import org.apache.sqoop.SqoopOptions.InvalidOptionsException;
+import org.apache.sqoop.SqoopOptions.UpdateMode;
+import org.apache.sqoop.cli.RelatedOptions;
+import org.apache.sqoop.cli.ToolOptions;
+import org.apache.sqoop.manager.ExportJobContext;
+import org.apache.sqoop.util.ExportException;
 import static org.apache.sqoop.manager.SupportedManagers.MYSQL;
 
 /**
  * Tool that performs HDFS exports to databases.
  */
-public class ExportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
+public class ExportTool extends BaseSqoopTool {
 
   public static final Log LOG = LogFactory.getLog(ExportTool.class.getName());
+  public static final String NOT_SUPPORTED_FILE_FORMAT_ERROR_MSG = "Please note that the export tool " +
+          "detects the file format automatically and does not support it as an argument: %s";
+
+  private final List<String> unsupportedArguments =
+    Collections.unmodifiableList(
+      Arrays.asList(
+        BaseSqoopTool.FMT_PARQUETFILE_ARG,
+        BaseSqoopTool.FMT_AVRODATAFILE_ARG,
+        BaseSqoopTool.FMT_SEQUENCEFILE_ARG)
+  );
 
   private CodeGenTool codeGenerator;
 
@@ -381,6 +393,26 @@ public class ExportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
     validateCodeGenOptions(options);
     validateHCatalogOptions(options);
     vaildateDirectExportOptions(options);
+  }
+
+  @Override
+  /** {@inheritDoc} */
+  protected boolean hasUnrecognizedArgs(String [] argv, int offset, int len) {
+    boolean unrecognizedArgs = super.hasUnrecognizedArgs(argv, offset, len);
+    for (String arg : argv) {
+      if (unsupportedArguments.contains(stripLeadingHyphens(arg))) {
+        LOG.error(String.format(NOT_SUPPORTED_FILE_FORMAT_ERROR_MSG, arg));
+      }
+    }
+    return unrecognizedArgs;
+  }
+
+  private String stripLeadingHyphens(String arg) {
+    if (arg != null
+            && arg.startsWith("--")) {
+      return arg.substring(2);
+    }
+    return arg;
   }
 
   void vaildateDirectExportOptions(SqoopOptions options) throws InvalidOptionsException {

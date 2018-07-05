@@ -18,11 +18,10 @@
 
 package org.apache.sqoop.mapreduce;
 
-import com.cloudera.sqoop.manager.ConnManager;
-import com.cloudera.sqoop.manager.ExportJobContext;
-import com.cloudera.sqoop.mapreduce.ExportJobBase;
-import com.cloudera.sqoop.mapreduce.db.DBConfiguration;
-import com.cloudera.sqoop.mapreduce.db.DBOutputFormat;
+import org.apache.sqoop.manager.ConnManager;
+import org.apache.sqoop.manager.ExportJobContext;
+import org.apache.sqoop.mapreduce.db.DBConfiguration;
+import org.apache.sqoop.mapreduce.db.DBOutputFormat;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.io.DefaultStringifier;
@@ -33,11 +32,10 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.sqoop.mapreduce.hcat.SqoopHCatUtilities;
-import org.kitesdk.data.mapreduce.DatasetKeyInputFormat;
+import org.apache.sqoop.mapreduce.parquet.ParquetExportJobConfigurator;
 
 import java.io.IOException;
 import java.util.Map;
-import org.apache.sqoop.util.FileSystemUtil;
 
 /**
  * Run an export using JDBC (JDBC-based ExportOutputFormat).
@@ -46,18 +44,23 @@ public class JdbcExportJob extends ExportJobBase {
 
   private FileType fileType;
 
+  private ParquetExportJobConfigurator parquetExportJobConfigurator;
+
   public static final Log LOG = LogFactory.getLog(
       JdbcExportJob.class.getName());
 
-  public JdbcExportJob(final ExportJobContext context) {
+  public JdbcExportJob(final ExportJobContext context, final ParquetExportJobConfigurator parquetExportJobConfigurator) {
     super(context);
+    this.parquetExportJobConfigurator = parquetExportJobConfigurator;
   }
 
   public JdbcExportJob(final ExportJobContext ctxt,
       final Class<? extends Mapper> mapperClass,
       final Class<? extends InputFormat> inputFormatClass,
-      final Class<? extends OutputFormat> outputFormatClass) {
+      final Class<? extends OutputFormat> outputFormatClass,
+      final ParquetExportJobConfigurator parquetExportJobConfigurator) {
     super(ctxt, mapperClass, inputFormatClass, outputFormatClass);
+    this.parquetExportJobConfigurator = parquetExportJobConfigurator;
   }
 
   @Override
@@ -79,8 +82,7 @@ public class JdbcExportJob extends ExportJobBase {
     } else if (fileType == FileType.PARQUET_FILE) {
       LOG.debug("Configuring for Parquet export");
       configureGenericRecordExportInputFormat(job, tableName);
-      String uri = "dataset:" + FileSystemUtil.makeQualified(getInputPath(), job.getConfiguration());
-      DatasetKeyInputFormat.configure(job).readFrom(uri);
+      parquetExportJobConfigurator.configureInputFormat(job, getInputPath());
     }
   }
 
@@ -121,7 +123,7 @@ public class JdbcExportJob extends ExportJobBase {
       case AVRO_DATA_FILE:
         return AvroInputFormat.class;
       case PARQUET_FILE:
-        return DatasetKeyInputFormat.class;
+        return parquetExportJobConfigurator.getInputFormatClass();
       default:
         return super.getInputFormatClass();
     }
@@ -138,7 +140,7 @@ public class JdbcExportJob extends ExportJobBase {
       case AVRO_DATA_FILE:
         return AvroExportMapper.class;
       case PARQUET_FILE:
-        return ParquetExportMapper.class;
+        return parquetExportJobConfigurator.getMapperClass();
       case UNKNOWN:
       default:
         return TextExportMapper.class;

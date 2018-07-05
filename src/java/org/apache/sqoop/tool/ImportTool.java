@@ -38,28 +38,30 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.sqoop.avro.AvroSchemaMismatchException;
 
-import com.cloudera.sqoop.SqoopOptions;
-import com.cloudera.sqoop.SqoopOptions.InvalidOptionsException;
-import com.cloudera.sqoop.cli.RelatedOptions;
-import com.cloudera.sqoop.cli.ToolOptions;
-import com.cloudera.sqoop.hive.HiveImport;
-import com.cloudera.sqoop.manager.ImportJobContext;
-import com.cloudera.sqoop.mapreduce.MergeJob;
-import com.cloudera.sqoop.metastore.JobData;
-import com.cloudera.sqoop.metastore.JobStorage;
-import com.cloudera.sqoop.metastore.JobStorageFactory;
+import org.apache.sqoop.SqoopOptions;
+import org.apache.sqoop.SqoopOptions.InvalidOptionsException;
+import org.apache.sqoop.cli.RelatedOptions;
+import org.apache.sqoop.cli.ToolOptions;
+import org.apache.sqoop.hive.HiveClient;
+import org.apache.sqoop.hive.HiveClientFactory;
+import org.apache.sqoop.manager.ImportJobContext;
+import org.apache.sqoop.mapreduce.MergeJob;
+import org.apache.sqoop.mapreduce.parquet.ParquetMergeJobConfigurator;
+import org.apache.sqoop.metastore.JobData;
+import org.apache.sqoop.metastore.JobStorage;
+import org.apache.sqoop.metastore.JobStorageFactory;
 import org.apache.sqoop.orm.ClassWriter;
-import com.cloudera.sqoop.orm.TableClassName;
-import com.cloudera.sqoop.util.AppendUtils;
-import com.cloudera.sqoop.util.ClassLoaderStack;
-import com.cloudera.sqoop.util.ImportException;
+import org.apache.sqoop.orm.TableClassName;
+import org.apache.sqoop.util.AppendUtils;
+import org.apache.sqoop.util.ClassLoaderStack;
+import org.apache.sqoop.util.ImportException;
 
 import static org.apache.sqoop.manager.SupportedManagers.MYSQL;
 
 /**
  * Tool that performs database imports to HDFS.
  */
-public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
+public class ImportTool extends BaseSqoopTool {
 
   public static final Log LOG = LogFactory.getLog(ImportTool.class.getName());
 
@@ -78,18 +80,21 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
   // Set classloader for local job runner
   private ClassLoader prevClassLoader = null;
 
+  private final HiveClientFactory hiveClientFactory;
+
   public ImportTool() {
     this("import", false);
   }
 
   public ImportTool(String toolName, boolean allTables) {
-    this(toolName, new CodeGenTool(), allTables);
+    this(toolName, new CodeGenTool(), allTables, new HiveClientFactory());
   }
 
-  public ImportTool(String toolName, CodeGenTool codeGenerator, boolean allTables) {
+  public ImportTool(String toolName, CodeGenTool codeGenerator, boolean allTables, HiveClientFactory hiveClientFactory) {
     super(toolName);
     this.codeGenerator = codeGenerator;
     this.allTables = allTables;
+    this.hiveClientFactory = hiveClientFactory;
   }
 
   @Override
@@ -484,7 +489,8 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
           loadJars(options.getConf(), context.getJarFile(), context.getTableName());
         }
 
-        MergeJob mergeJob = new MergeJob(options);
+        ParquetMergeJobConfigurator parquetMergeJobConfigurator = getParquetJobConfigurator(options).createParquetMergeJobConfigurator();
+        MergeJob mergeJob = new MergeJob(options, parquetMergeJobConfigurator);
         if (mergeJob.runMergeJob()) {
           // Rename destination directory to proper location.
           Path tmpDir = getOutputPath(options, context.getTableName());
@@ -515,17 +521,16 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
    * Import a table or query.
    * @return true if an import was performed, false otherwise.
    */
-  protected boolean importTable(SqoopOptions options, String tableName,
-      HiveImport hiveImport) throws IOException, ImportException {
+  protected boolean importTable(SqoopOptions options) throws IOException, ImportException {
     String jarFile = null;
 
     // Generate the ORM code for the tables.
-    jarFile = codeGenerator.generateORM(options, tableName);
+    jarFile = codeGenerator.generateORM(options, options.getTableName());
 
-    Path outputPath = getOutputPath(options, tableName);
+    Path outputPath = getOutputPath(options, options.getTableName());
 
     // Do the actual import.
-    ImportJobContext context = new ImportJobContext(tableName, jarFile,
+    ImportJobContext context = new ImportJobContext(options.getTableName(), jarFile,
         options, outputPath);
 
     // If we're doing an incremental import, set up the
@@ -538,7 +543,7 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
       deleteTargetDir(context);
     }
 
-    if (null != tableName) {
+    if (null != options.getTableName()) {
       manager.importTable(context);
     } else {
       manager.importQuery(context);
@@ -556,7 +561,8 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
       // For Parquet file, the import action will create hive table directly via
       // kite. So there is no need to do hive import as a post step again.
       if (options.getFileLayout() != SqoopOptions.FileLayout.ParquetFile) {
-        hiveImport.importTable(tableName, options.getHiveTableName(), false);
+        HiveClient hiveClient = hiveClientFactory.createHiveClient(options, manager);
+        hiveClient.importTable();
       }
     }
 
@@ -625,8 +631,6 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
   @Override
   /** {@inheritDoc} */
   public int run(SqoopOptions options) {
-    HiveImport hiveImport = null;
-
     if (allTables) {
       // We got into this method, but we should be in a subclass.
       // (This method only handles a single table)
@@ -642,12 +646,8 @@ public class ImportTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
     codeGenerator.setManager(manager);
 
     try {
-      if (options.doHiveImport()) {
-        hiveImport = new HiveImport(options, manager, options.getConf(), false);
-      }
-
       // Import a single table (or query) the user specified.
-      importTable(options, options.getTableName(), hiveImport);
+      importTable(options);
     } catch (IllegalArgumentException iea) {
         LOG.error(IMPORT_FAILED_ERROR_MSG + iea.getMessage());
       rethrowIfRequired(options, iea);

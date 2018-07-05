@@ -52,12 +52,12 @@ import org.apache.sqoop.hcat.HCatalogTestUtils.KeyType;
 import org.apache.sqoop.mapreduce.hcat.SqoopHCatUtilities;
 import org.junit.Before;
 
-import com.cloudera.sqoop.Sqoop;
-import com.cloudera.sqoop.SqoopOptions;
-import com.cloudera.sqoop.testutil.CommonArgs;
-import com.cloudera.sqoop.testutil.ImportJobTestCase;
-import com.cloudera.sqoop.tool.ImportTool;
-import com.cloudera.sqoop.tool.SqoopTool;
+import org.apache.sqoop.Sqoop;
+import org.apache.sqoop.SqoopOptions;
+import org.apache.sqoop.testutil.CommonArgs;
+import org.apache.sqoop.testutil.ImportJobTestCase;
+import org.apache.sqoop.tool.ImportTool;
+import org.apache.sqoop.tool.SqoopTool;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -401,6 +401,36 @@ public class HCatalogImportTest extends ImportJobTestCase {
   }
 
   @Test
+  public void testDecimalTypes() throws Exception{
+    final int TOTAL_RECORDS = 1 * 10;
+    String hcatTable = getTableName().toUpperCase();
+    boolean allowRoundig = false;
+    String dbTypeNumeric = "numeric";
+    String dbTypeDecimal = "decimal";
+    int sqlTypeNumeric = Types.NUMERIC;
+    int sqlTypeDecimal = Types.DECIMAL;
+    HCatFieldSchema.Type hcatTypeDecimal = HCatFieldSchema.Type.DECIMAL;
+
+    BigDecimal inputValue1 = new BigDecimal("454018528782.42006329");
+    HiveDecimal expectedValue1 = HiveDecimal.create(new BigDecimal("454018528782.42006"), allowRoundig);
+    BigDecimal inputValue2 = new BigDecimal("87658675864540185.123456789123456789");
+    HiveDecimal expectedValue2 = HiveDecimal.create(new BigDecimal("87658675864540185.12346"), allowRoundig);
+    int precision = 22;
+    int scale = 5;
+
+    ColumnGenerator[] hcatColumns = new ColumnGenerator[] {
+        HCatalogTestUtils.colGenerator(HCatalogTestUtils.forIdx(0), dbTypeNumeric, sqlTypeNumeric,
+            hcatTypeDecimal, precision, scale, expectedValue1, inputValue1, KeyType.NOT_A_KEY),
+
+        HCatalogTestUtils.colGenerator(HCatalogTestUtils.forIdx(1), dbTypeDecimal, sqlTypeDecimal,
+            hcatTypeDecimal, precision, scale, expectedValue2, inputValue2, KeyType.NOT_A_KEY)
+    };
+    List<String> addlArgsArray = new ArrayList<String>();
+    setExtraArgs(addlArgsArray);
+    runHCatImport(addlArgsArray, TOTAL_RECORDS, hcatTable, hcatColumns, null);
+  }
+
+  @Test
   public void testNumberTypes() throws Exception {
     final int TOTAL_RECORDS = 1 * 10;
     String table = getTableName().toUpperCase();
@@ -415,6 +445,18 @@ public class HCatalogImportTest extends ImportJobTestCase {
           "decimal(18,2)", Types.DECIMAL, HCatFieldSchema.Type.DECIMAL, 18, 2,
           HiveDecimal.create(new BigDecimal("2000")),
           new BigDecimal("2000"), KeyType.NOT_A_KEY),
+      HCatalogTestUtils.colGenerator(HCatalogTestUtils.forIdx(3),
+              "decimal(18,2)", Types.DECIMAL, HCatFieldSchema.Type.VARCHAR, 20, 0,
+              new HiveVarchar("1999", 20), new BigDecimal("1999"), KeyType.NOT_A_KEY),
+      HCatalogTestUtils.colGenerator(HCatalogTestUtils.forIdx(4),
+              "decimal(18,2)", Types.DECIMAL, HCatFieldSchema.Type.CHAR, 20, 0,
+              new HiveChar("1998", 20), new BigDecimal("1998"), KeyType.NOT_A_KEY),
+      HCatalogTestUtils.colGenerator(HCatalogTestUtils.forIdx(5),
+              "int", Types.INTEGER, HCatFieldSchema.Type.VARCHAR, 20, 0,
+              new HiveVarchar("2001", 20 ), new BigDecimal("2001"), KeyType.NOT_A_KEY),
+      HCatalogTestUtils.colGenerator(HCatalogTestUtils.forIdx(6),
+              "int", Types.INTEGER, HCatFieldSchema.Type.CHAR, 20, 0,
+              new HiveChar("2002", 20), new BigDecimal("2002"), KeyType.NOT_A_KEY),
     };
     List<String> addlArgsArray = new ArrayList<String>();
     setExtraArgs(addlArgsArray);

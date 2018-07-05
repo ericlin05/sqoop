@@ -18,6 +18,8 @@
 
 package org.apache.sqoop.manager;
 
+import static org.apache.sqoop.manager.JdbcDrivers.POSTGRES;
+
 import java.io.IOException;
 import java.sql.SQLException;
 
@@ -29,23 +31,20 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.cloudera.sqoop.SqoopOptions;
-import com.cloudera.sqoop.util.ImportException;
+import org.apache.sqoop.SqoopOptions;
+import org.apache.sqoop.util.ImportException;
 import org.apache.sqoop.cli.RelatedOptions;
 
 /**
  * Manages connections to Postgresql databases.
  */
 public class PostgresqlManager
-    extends com.cloudera.sqoop.manager.CatalogQueryManager {
+    extends CatalogQueryManager {
 
   public static final String SCHEMA = "schema";
 
   public static final Log LOG = LogFactory.getLog(
       PostgresqlManager.class.getName());
-
-  // driver class to ensure is loaded when making db connection.
-  private static final String DRIVER_CLASS = "org.postgresql.Driver";
 
   // set to true after we warn the user that we can use direct fastpath.
   private static boolean warningPrinted = false;
@@ -56,7 +55,7 @@ public class PostgresqlManager
   private String schema;
 
   public PostgresqlManager(final SqoopOptions opts) {
-    super(DRIVER_CLASS, opts);
+    super(POSTGRES.getDriverClass(), opts);
 
     // Try to parse extra arguments
     try {
@@ -110,7 +109,7 @@ public class PostgresqlManager
 
   @Override
   public void importTable(
-          com.cloudera.sqoop.manager.ImportJobContext context)
+      org.apache.sqoop.manager.ImportJobContext context)
         throws IOException, ImportException {
 
     // The user probably should have requested --direct to invoke pg_dump.

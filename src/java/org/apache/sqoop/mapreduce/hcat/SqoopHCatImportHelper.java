@@ -52,11 +52,11 @@ import org.apache.hive.hcatalog.mapreduce.StorerInfo;
 import org.apache.sqoop.lib.SqoopRecord;
 import org.apache.sqoop.mapreduce.ImportJobBase;
 
-import com.cloudera.sqoop.lib.BlobRef;
-import com.cloudera.sqoop.lib.ClobRef;
-import com.cloudera.sqoop.lib.DelimiterSet;
-import com.cloudera.sqoop.lib.FieldFormatter;
-import com.cloudera.sqoop.lib.LargeObjectLoader;
+import org.apache.sqoop.lib.BlobRef;
+import org.apache.sqoop.lib.ClobRef;
+import org.apache.sqoop.lib.DelimiterSet;
+import org.apache.sqoop.lib.FieldFormatter;
+import org.apache.sqoop.lib.LargeObjectLoader;
 
 /**
  * Helper class for Sqoop HCat Integration import jobs.
@@ -147,6 +147,13 @@ public class SqoopHCatImportHelper {
     String partKeysString = staticPartitionKeys == null ? ""
       : Arrays.toString(staticPartitionKeys);
     LOG.debug("Static partition key used : "  + partKeysString);
+  }
+
+  /* This construct is only for testing and avoiding static method
+   * usage
+   */
+  SqoopHCatImportHelper() {
+
   }
 
   public HCatRecord convertToHCatRecord(SqoopRecord sqr) throws IOException,
@@ -328,9 +335,7 @@ public class SqoopHCatImportHelper {
 
   private Object convertStringTypes(Object val, HCatFieldSchema hfs) {
     HCatFieldSchema.Type hfsType = hfs.getType();
-    if (hfsType == HCatFieldSchema.Type.STRING
-        || hfsType == HCatFieldSchema.Type.VARCHAR
-        || hfsType == HCatFieldSchema.Type.CHAR) {
+    if (isStringType(hfsType)) {
       String str = val.toString();
       if (doHiveDelimsReplacement) {
         str = FieldFormatter.hiveStringReplaceDelims(str,
@@ -393,59 +398,82 @@ public class SqoopHCatImportHelper {
       return null;
     }
     if (val instanceof BigDecimal
-        && hfsType == HCatFieldSchema.Type.STRING
-        || hfsType == HCatFieldSchema.Type.VARCHAR
-        || hfsType == HCatFieldSchema.Type.CHAR) {
+        && isStringType(hfsType)) {
       BigDecimal bd = (BigDecimal) val;
-      String bdStr = null;
-      if (bigDecimalFormatString) {
-        bdStr = bd.toPlainString();
-      } else {
-        bdStr = bd.toString();
-      }
-      if (hfsType == HCatFieldSchema.Type.VARCHAR) {
-        VarcharTypeInfo vti = (VarcharTypeInfo) hfs.getTypeInfo();
-        HiveVarchar hvc = new HiveVarchar(bdStr, vti.getLength());
-        return hvc;
-      } else if (hfsType == HCatFieldSchema.Type.VARCHAR) {
-        CharTypeInfo cti = (CharTypeInfo) hfs.getTypeInfo();
-        HiveChar hChar = new HiveChar(bdStr, cti.getLength());
-        return hChar;
-      } else {
-        return bdStr;
-      }
+      return convertBigDecimalToTextTypes(hfs, hfsType, bd);
     }
     Number n = (Number) val;
+    return convertNumberToAnyType(hfs, hfsType, n);
+  }
+
+  private boolean isStringType(HCatFieldSchema.Type hfsType) {
+    return hfsType == HCatFieldSchema.Type.STRING
+        || hfsType == HCatFieldSchema.Type.VARCHAR
+        || hfsType == HCatFieldSchema.Type.CHAR;
+  }
+
+  private Object convertNumberToAnyType(HCatFieldSchema hfs, HCatFieldSchema.Type hfsType, Number number) {
     if (hfsType == HCatFieldSchema.Type.TINYINT) {
-      return n.byteValue();
+      return number.byteValue();
     } else if (hfsType == HCatFieldSchema.Type.SMALLINT) {
-      return n.shortValue();
+      return number.shortValue();
     } else if (hfsType == HCatFieldSchema.Type.INT) {
-      return n.intValue();
+      return number.intValue();
     } else if (hfsType == HCatFieldSchema.Type.BIGINT) {
-      return n.longValue();
+      return number.longValue();
     } else if (hfsType == HCatFieldSchema.Type.FLOAT) {
-      return n.floatValue();
+      return number.floatValue();
     } else if (hfsType == HCatFieldSchema.Type.DOUBLE) {
-      return n.doubleValue();
+      return number.doubleValue();
     } else if (hfsType == HCatFieldSchema.Type.BOOLEAN) {
-      return n.byteValue() == 0 ? Boolean.FALSE : Boolean.TRUE;
+      return number.byteValue() == 0 ? Boolean.FALSE : Boolean.TRUE;
     } else if (hfsType == HCatFieldSchema.Type.STRING) {
-      return n.toString();
+      return number.toString();
     } else if (hfsType == HCatFieldSchema.Type.VARCHAR) {
       VarcharTypeInfo vti = (VarcharTypeInfo) hfs.getTypeInfo();
-      HiveVarchar hvc = new HiveVarchar(val.toString(), vti.getLength());
+      HiveVarchar hvc = new HiveVarchar(number.toString(), vti.getLength());
       return hvc;
     } else if (hfsType == HCatFieldSchema.Type.CHAR) {
       CharTypeInfo cti = (CharTypeInfo) hfs.getTypeInfo();
-      HiveChar hChar = new HiveChar(val.toString(), cti.getLength());
+      HiveChar hChar = new HiveChar(number.toString(), cti.getLength());
       return hChar;
     } else if (hfsType == HCatFieldSchema.Type.DECIMAL) {
-      BigDecimal bd = new BigDecimal(n.doubleValue(),
-        MathContext.DECIMAL128);
-      return HiveDecimal.create(bd);
+      return convertNumberIntoHiveDecimal(number);
     }
     return null;
+  }
+
+  private Object convertBigDecimalToTextTypes(HCatFieldSchema hfs, HCatFieldSchema.Type hfsType, BigDecimal bigDecimal) {
+    String bdStr = null;
+    if (bigDecimalFormatString) {
+      bdStr = bigDecimal.toPlainString();
+    } else {
+      bdStr = bigDecimal.toString();
+    }
+    if (hfsType == HCatFieldSchema.Type.VARCHAR) {
+      VarcharTypeInfo vti = (VarcharTypeInfo) hfs.getTypeInfo();
+      HiveVarchar hvc = new HiveVarchar(bdStr, vti.getLength());
+      return hvc;
+    } else if (hfsType == HCatFieldSchema.Type.CHAR) {
+      CharTypeInfo cti = (CharTypeInfo) hfs.getTypeInfo();
+      HiveChar hChar = new HiveChar(bdStr, cti.getLength());
+      return hChar;
+    } else {
+      return bdStr;
+    }
+  }
+
+  HiveDecimal convertNumberIntoHiveDecimal(Number number) {
+    BigDecimal bigDecimal = null;
+
+    if(number instanceof BigDecimal) {
+      bigDecimal = (BigDecimal) number;
+    } else if(number instanceof Long) {
+      bigDecimal = BigDecimal.valueOf((Long)number);
+    } else if (number instanceof Double) {
+      bigDecimal = BigDecimal.valueOf((Double) number);
+    }
+    return HiveDecimal.create(bigDecimal);
   }
 
   public void cleanup() throws IOException {

@@ -17,6 +17,8 @@
  */
 package org.apache.sqoop.manager;
 
+import static org.apache.sqoop.manager.JdbcDrivers.DB2;
+
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -35,25 +37,21 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.sqoop.mapreduce.db.Db2DataDrivenDBInputFormat;
 
-import com.cloudera.sqoop.SqoopOptions;
-import com.cloudera.sqoop.mapreduce.ExportBatchOutputFormat;
-import com.cloudera.sqoop.mapreduce.JdbcExportJob;
-import com.cloudera.sqoop.util.ExportException;
-import com.cloudera.sqoop.util.ImportException;
+import org.apache.sqoop.SqoopOptions;
+import org.apache.sqoop.mapreduce.ExportBatchOutputFormat;
+import org.apache.sqoop.mapreduce.JdbcExportJob;
+import org.apache.sqoop.util.ExportException;
+import org.apache.sqoop.util.ImportException;
 import org.apache.sqoop.util.LoggingUtils;
 
 /**
  * Manages connections to DB2 databases. Requires the DB2 JDBC driver.
  */
 public class Db2Manager
-    extends com.cloudera.sqoop.manager.GenericJdbcManager {
+    extends org.apache.sqoop.manager.GenericJdbcManager {
 
   public static final Log LOG = LogFactory.getLog(
       Db2Manager.class.getName());
-
-  // driver class to ensure is loaded when making db connection.
-  private static final String DRIVER_CLASS =
-      "com.ibm.db2.jcc.DB2Driver";
 
   private static final String XML_TO_JAVA_DATA_TYPE = "String";
 
@@ -82,7 +80,7 @@ public class Db2Manager
   private String schema = null;
 
   public Db2Manager(final SqoopOptions opts) {
-    super(DRIVER_CLASS, opts);
+    super(DB2.getDriverClass(), opts);
 
     // Try to parse extra arguments
     try {
@@ -97,7 +95,7 @@ public class Db2Manager
    */
   @Override
   public void importTable(
-          com.cloudera.sqoop.manager.ImportJobContext context)
+      org.apache.sqoop.manager.ImportJobContext context)
       throws IOException, ImportException {
     context.setConnManager(this);
     // Specify the DB2-specific DBInputFormat for import.
@@ -109,11 +107,11 @@ public class Db2Manager
    * Export data stored in HDFS into a table in a database.
    */
   @Override
-  public void exportTable(com.cloudera.sqoop.manager.ExportJobContext context)
+  public void exportTable(org.apache.sqoop.manager.ExportJobContext context)
       throws IOException, ExportException {
     context.setConnManager(this);
     JdbcExportJob exportJob = new JdbcExportJob(context, null, null,
-      ExportBatchOutputFormat.class);
+      ExportBatchOutputFormat.class, getParquetJobConfigurator().createParquetExportJobConfigurator());
     exportJob.runExport();
   }
 

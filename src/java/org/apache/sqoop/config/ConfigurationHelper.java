@@ -27,7 +27,7 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.util.GenericOptionsParser;
 
-import com.cloudera.sqoop.mapreduce.db.DBConfiguration;
+import org.apache.sqoop.mapreduce.db.DBConfiguration;
 
 import org.apache.hadoop.util.ReflectionUtils;
 
@@ -248,5 +248,14 @@ public final class ConfigurationHelper {
 
   private ConfigurationHelper() {
     // Disable explicit object creation
+  }
+
+  public static Integer getIntegerConfigIfExists(Configuration conf, String key) {
+    Integer config = null;
+    String configString = conf.get(key, null);
+    if (configString != null) {
+      config = Integer.valueOf(configString);
+    }
+    return config;
   }
 }

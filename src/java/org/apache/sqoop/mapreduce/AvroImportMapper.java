@@ -18,9 +18,9 @@
 
 package org.apache.sqoop.mapreduce;
 
-import com.cloudera.sqoop.lib.LargeObjectLoader;
-import com.cloudera.sqoop.lib.SqoopRecord;
-import com.cloudera.sqoop.mapreduce.AutoProgressMapper;
+import org.apache.sqoop.config.ConfigurationConstants;
+import org.apache.sqoop.lib.LargeObjectLoader;
+import org.apache.sqoop.lib.SqoopRecord;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.AvroWrapper;
@@ -45,6 +45,7 @@ public class AvroImportMapper
   private Schema schema;
   private LargeObjectLoader lobLoader;
   private boolean bigDecimalFormatString;
+  private boolean bigDecimalPadding;
 
   @Override
   protected void setup(Context context)
@@ -55,6 +56,7 @@ public class AvroImportMapper
     bigDecimalFormatString = conf.getBoolean(
         ImportJobBase.PROPERTY_BIGDECIMAL_FORMAT,
         ImportJobBase.PROPERTY_BIGDECIMAL_FORMAT_DEFAULT);
+    bigDecimalPadding = conf.getBoolean(ConfigurationConstants.PROP_ENABLE_AVRO_DECIMAL_PADDING, false);
   }
 
   @Override
@@ -68,7 +70,7 @@ public class AvroImportMapper
       throw new IOException(sqlE);
     }
 
-    GenericRecord outKey = AvroUtil.toGenericRecord(val.getFieldMap(), schema, bigDecimalFormatString);
+    GenericRecord outKey = AvroUtil.toGenericRecord(val.getFieldMap(), schema, bigDecimalFormatString, bigDecimalPadding);
     wrapper.datum(outKey);
     context.write(wrapper, NullWritable.get());
   }
