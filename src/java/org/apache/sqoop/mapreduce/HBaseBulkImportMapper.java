@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.io.LongWritable;
@@ -32,9 +33,8 @@ import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.sqoop.hbase.PutTransformer;
 import org.apache.sqoop.hbase.ToStringPutTransformer;
 
-import com.cloudera.sqoop.lib.LargeObjectLoader;
-import com.cloudera.sqoop.lib.SqoopRecord;
-import com.cloudera.sqoop.mapreduce.AutoProgressMapper;
+import org.apache.sqoop.lib.LargeObjectLoader;
+import org.apache.sqoop.lib.SqoopRecord;
 import static org.apache.sqoop.hbase.HBasePutProcessor.*;
 
 /**
@@ -79,9 +79,12 @@ public class HBaseBulkImportMapper
     }
     Map<String, Object> fields = val.getFieldMap();
 
-    List<Put> putList = putTransformer.getPutCommand(fields);
-    for(Put put: putList){
-      context.write(new ImmutableBytesWritable(put.getRow()), put);
+    List<Mutation> mutationList = putTransformer.getMutationCommand(fields);
+    for(Mutation mutation: mutationList){
+      if(mutation != null && mutation instanceof Put) {
+        Put putObject = (Put) mutation;
+        context.write(new ImmutableBytesWritable(putObject.getRow()), putObject);
+      }
     }
   }
   @Override

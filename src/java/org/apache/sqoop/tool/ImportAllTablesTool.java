@@ -28,16 +28,15 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.cloudera.sqoop.SqoopOptions;
-import com.cloudera.sqoop.SqoopOptions.InvalidOptionsException;
-import com.cloudera.sqoop.cli.RelatedOptions;
-import com.cloudera.sqoop.hive.HiveImport;
-import com.cloudera.sqoop.util.ImportException;
+import org.apache.sqoop.SqoopOptions;
+import org.apache.sqoop.SqoopOptions.InvalidOptionsException;
+import org.apache.sqoop.cli.RelatedOptions;
+import org.apache.sqoop.util.ImportException;
 
 /**
  * Tool that performs database imports of all tables in a database to HDFS.
  */
-public class ImportAllTablesTool extends com.cloudera.sqoop.tool.ImportTool {
+public class ImportAllTablesTool extends ImportTool {
 
   public static final Log LOG = LogFactory.getLog(
       ImportAllTablesTool.class.getName());
@@ -75,7 +74,6 @@ public class ImportAllTablesTool extends com.cloudera.sqoop.tool.ImportTool {
   @Override
   /** {@inheritDoc} */
   public int run(SqoopOptions options) {
-    HiveImport hiveImport = null;
     Set<String> excludes = new HashSet<String>();
 
     if (!init(options)) {
@@ -83,9 +81,6 @@ public class ImportAllTablesTool extends com.cloudera.sqoop.tool.ImportTool {
     }
 
     try {
-      if (options.doHiveImport()) {
-        hiveImport = new HiveImport(options, manager, options.getConf(), false);
-      }
 
       if (options.getAllTablesExclude() != null) {
         excludes.addAll(Arrays.asList(options.getAllTablesExclude().split(",")));
@@ -97,17 +92,13 @@ public class ImportAllTablesTool extends com.cloudera.sqoop.tool.ImportTool {
         LOG.error("manager.listTables() returned null");
         return 1;
       } else {
-        int numMappers = options.getNumMappers();
         for (String tableName : tables) {
           if (excludes.contains(tableName)) {
             System.out.println("Skipping table: " + tableName);
           } else {
-            /*
-             * Number of mappers could be potentially reset in imports.  So
-             * we set it to the configured number before each import.
-             */
-            options.setNumMappers(numMappers);
-            importTable(options, tableName, hiveImport);
+            SqoopOptions clonedOptions = (SqoopOptions) options.clone();
+            clonedOptions.setTableName(tableName);
+            importTable(clonedOptions);
           }
         }
       }

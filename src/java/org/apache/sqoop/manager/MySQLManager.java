@@ -18,6 +18,8 @@
 
 package org.apache.sqoop.manager;
 
+import static org.apache.sqoop.manager.JdbcDrivers.MYSQL;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URI;
@@ -27,8 +29,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -38,10 +38,10 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.cloudera.sqoop.SqoopOptions;
-import com.cloudera.sqoop.util.ImportException;
-import com.cloudera.sqoop.util.ExportException;
-import com.cloudera.sqoop.mapreduce.JdbcUpsertExportJob;
+import org.apache.sqoop.SqoopOptions;
+import org.apache.sqoop.util.ImportException;
+import org.apache.sqoop.util.ExportException;
+import org.apache.sqoop.mapreduce.JdbcUpsertExportJob;
 import org.apache.sqoop.mapreduce.mysql.MySQLUpsertOutputFormat;
 import org.apache.sqoop.util.LoggingUtils;
 
@@ -49,12 +49,9 @@ import org.apache.sqoop.util.LoggingUtils;
  * Manages connections to MySQL databases.
  */
 public class MySQLManager
-    extends com.cloudera.sqoop.manager.InformationSchemaManager {
+    extends InformationSchemaManager {
 
   public static final Log LOG = LogFactory.getLog(MySQLManager.class.getName());
-
-  // driver class to ensure is loaded when making db connection.
-  private static final String DRIVER_CLASS = "com.mysql.jdbc.Driver";
 
   // set to true after we warn the user that we can use direct fastpath.
   private static boolean warningPrinted = false;
@@ -62,7 +59,7 @@ public class MySQLManager
   private static final String EXPORT_OPERATION = "export";
 
   public MySQLManager(final SqoopOptions opts) {
-    super(DRIVER_CLASS, opts);
+    super(MYSQL.getDriverClass(), opts);
   }
 
   @Override
@@ -103,7 +100,7 @@ public class MySQLManager
   }
 
   @Override
-  public void importTable(com.cloudera.sqoop.manager.ImportJobContext context)
+  public void importTable(org.apache.sqoop.manager.ImportJobContext context)
       throws IOException, ImportException {
 
     // Check that we're not doing a MapReduce from localhost. If we are, point
@@ -131,7 +128,7 @@ public class MySQLManager
    * {@inheritDoc}
    */
   @Override
-  public void upsertTable(com.cloudera.sqoop.manager.ExportJobContext context)
+  public void upsertTable(org.apache.sqoop.manager.ExportJobContext context)
       throws IOException, ExportException {
     context.setConnManager(this);
     LOG.warn("MySQL Connector upsert functionality is using INSERT ON");
@@ -141,7 +138,7 @@ public class MySQLManager
     LOG.warn("documentation for additional limitations.");
 
     JdbcUpsertExportJob exportJob =
-      new JdbcUpsertExportJob(context, MySQLUpsertOutputFormat.class);
+      new JdbcUpsertExportJob(context, MySQLUpsertOutputFormat.class, getParquetJobConfigurator().createParquetExportJobConfigurator());
     exportJob.runExport();
   }
 

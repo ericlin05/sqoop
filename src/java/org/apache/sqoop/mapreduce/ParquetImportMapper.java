@@ -18,16 +18,12 @@
 
 package org.apache.sqoop.mapreduce;
 
-import com.cloudera.sqoop.lib.LargeObjectLoader;
-import com.cloudera.sqoop.lib.SqoopRecord;
-import com.cloudera.sqoop.mapreduce.AutoProgressMapper;
+import org.apache.sqoop.lib.LargeObjectLoader;
+import org.apache.sqoop.lib.SqoopRecord;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
-import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.sqoop.avro.AvroUtil;
 
 import java.io.IOException;
@@ -36,9 +32,9 @@ import java.sql.SQLException;
 /**
  * Imports records by writing them to a Parquet File.
  */
-public class ParquetImportMapper
+public abstract class ParquetImportMapper<KEYOUT, VALOUT>
     extends AutoProgressMapper<LongWritable, SqoopRecord,
-        GenericRecord, NullWritable> {
+    KEYOUT, VALOUT> {
 
   private Schema schema = null;
   private boolean bigDecimalFormatString = true;
@@ -48,11 +44,11 @@ public class ParquetImportMapper
   protected void setup(Context context)
       throws IOException, InterruptedException {
     Configuration conf = context.getConfiguration();
-    schema = ParquetJob.getAvroSchema(conf);
+    schema = getAvroSchema(conf);
     bigDecimalFormatString = conf.getBoolean(
         ImportJobBase.PROPERTY_BIGDECIMAL_FORMAT,
         ImportJobBase.PROPERTY_BIGDECIMAL_FORMAT_DEFAULT);
-    lobLoader = new LargeObjectLoader(conf, new Path(conf.get("sqoop.kite.lob.extern.dir", "/tmp/sqoop-parquet-" + context.getTaskAttemptID())));
+    lobLoader = createLobLoader(context);
   }
 
   @Override
@@ -65,9 +61,9 @@ public class ParquetImportMapper
       throw new IOException(sqlE);
     }
 
-    GenericRecord outKey = AvroUtil.toGenericRecord(val.getFieldMap(), schema,
+    GenericRecord record = AvroUtil.toGenericRecord(val.getFieldMap(), schema,
         bigDecimalFormatString);
-    context.write(outKey, null);
+    write(context, record);
   }
 
   @Override
@@ -77,4 +73,9 @@ public class ParquetImportMapper
     }
   }
 
+  protected abstract LargeObjectLoader createLobLoader(Context context) throws IOException, InterruptedException;
+
+  protected abstract Schema getAvroSchema(Configuration configuration);
+
+  protected abstract void write(Context context, GenericRecord record) throws IOException, InterruptedException;
 }

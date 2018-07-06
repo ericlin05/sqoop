@@ -23,15 +23,11 @@ import java.io.IOException;
 import org.apache.avro.Schema;
 import org.apache.avro.file.DataFileReader;
 import org.apache.avro.file.FileReader;
-import org.apache.avro.file.SeekableInput;
-import org.apache.avro.generic.GenericDatumReader;
-import org.apache.avro.generic.GenericRecord;
-import org.apache.avro.io.DatumReader;
 import org.apache.avro.mapred.FsInput;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.RemoteIterator;
+import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
@@ -42,10 +38,11 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.apache.sqoop.avro.AvroUtil;
 import org.apache.sqoop.mapreduce.ExportJobBase.FileType;
+import org.apache.sqoop.mapreduce.parquet.ParquetMergeJobConfigurator;
 import org.apache.sqoop.util.Jars;
 
-import com.cloudera.sqoop.SqoopOptions;
-import com.cloudera.sqoop.mapreduce.JobBase;
+import org.apache.sqoop.SqoopOptions;
+import org.apache.sqoop.mapreduce.JobBase;
 import org.apache.sqoop.util.FileSystemUtil;
 
 /**
@@ -67,8 +64,11 @@ public class MergeJob extends JobBase {
    */
   public static final String MERGE_SQOOP_RECORD_KEY = "sqoop.merge.class";
 
-  public MergeJob(final SqoopOptions opts) {
+  private final ParquetMergeJobConfigurator parquetMergeJobConfigurator;
+
+  public MergeJob(final SqoopOptions opts, final ParquetMergeJobConfigurator parquetMergeJobConfigurator) {
     super(opts, null, null, null);
+    this.parquetMergeJobConfigurator = parquetMergeJobConfigurator;
   }
 
   public boolean runMergeJob() throws IOException {
@@ -130,6 +130,11 @@ public class MergeJob extends JobBase {
 
       FileType fileType = ExportJobBase.getFileType(jobConf, oldPath);
       switch (fileType) {
+        case PARQUET_FILE:
+          Path finalPath = new Path(options.getTargetDir());
+          finalPath = FileSystemUtil.makeQualified(finalPath, jobConf);
+          parquetMergeJobConfigurator.configureParquetMergeJob(jobConf, job, oldPath, newPath, finalPath);
+          break;
         case AVRO_DATA_FILE:
           configueAvroMergeJob(conf, job, oldPath, newPath);
           break;

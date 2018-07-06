@@ -50,7 +50,7 @@
   <property name="oldversion" value="1.4.7" />
   <!-- The point when we branched for the previous release. -->
   <property name="prev.git.hash"
-      value="81624ddf3c8ca5834ab015ebafc8b8649ac36ab7" />
+      value="b0f391e75154be86f95378ab141f6dd1b3b59475" />
 
   <property name="artifact.name" value="${name}-${version}" />
   <property name="dest.jar" value="${artifact.name}.jar" />
@@ -132,8 +132,6 @@
       value="${findbugs.out.dir}/report.xml" />
   <property name="findbugs.output.html.file"
       value="${findbugs.out.dir}/report.html" />
-  <property name="findbugs.excludes"
-      location="${test.dir}/findbugsExcludeFile.xml" />
 
   <!-- maven -->
   <property name="mvn.build.dir" value="${build.dir}/m2" />
@@ -218,6 +216,9 @@
   <property name="sqoop.test.postgresql.username"
             value="sqooptest" />
 
+  <property name="sqoop.test.postgresql.password"
+            value="" />
+
   <property name="sqoop.test.postgresql.pg_bulkload"
             value="pg_bulkload" />
 
@@ -227,11 +228,6 @@
   <property name="sqoop.test.sqlserver.database"
             value="sqooptest"/>
 
-  <property name="java.security.krb5.realm"
-            value="OX.AC.UK"/>
-
-  <property name="java.security.krb5.kdc"
-            value="kdc0.ox.ac.uk:kdc1.ox.ac.uk"/>
   <property name="ms.sqlserver.username"
             value="SQOOPUSER"/>
 
@@ -250,6 +246,13 @@
   <property name="sqoop.test.netezza.db.name" value="SQOOP" />
   <property name="sqoop.test.netezza.table.name" value="EMPNZ" />
 
+  <property name="sqoop.test.mainframe.ftp.host" value="localhost" />
+  <property name="sqoop.test.mainframe.ftp.port" value="2121" />
+  <property name="sqoop.test.mainframe.ftp.username" value="test" />
+  <property name="sqoop.test.mainframe.ftp.password" value="test" />
+  <property name="sqoop.test.mainframe.ftp.dataset.gdg" value="TSODIQ1.GDGTEXT" />
+  <property name="sqoop.test.mainframe.ftp.dataset.gdg.filename" value="G0001V43" />
+  <property name="sqoop.test.mainframe.ftp.dataset.gdg.md5" value="f0d0d171fdb8a03dbc1266ed179d7093" />
 
   <condition property="windows">
     <os family="windows" />
@@ -451,7 +454,7 @@
     <if>
       <equals arg1="${windows}" arg2="true" />
       <then>
-        <java classname="com.cloudera.sqoop.Sqoop"
+        <java classname="org.apache.sqoop.Sqoop"
             fork="true"
             failonerror="true"
             output="${build.dir}/tools-list"
@@ -468,7 +471,7 @@
         </exec>
       </then>
       <else>
-        <java classname="com.cloudera.sqoop.Sqoop"
+        <java classname="org.apache.sqoop.Sqoop"
             fork="true"
             failonerror="true"
             output="${build.dir}/tools-list"
@@ -730,13 +733,16 @@
     </copy>
     <junit
       printsummary="yes" showoutput="${test.output}"
-      haltonfailure="no" fork="yes" maxmemory="1024m"
+      haltonfailure="no" fork="yes" maxmemory="5120m"
       errorProperty="tests.failed" failureProperty="tests.failed"
       timeout="${test.timeout}"
       dir="${build.test}/data">
 
       <!-- enable asserts in tests -->
       <jvmarg value="-ea" />
+
+      <!-- We need to disable asserts in HadoopThriftAuthBridge to be able to run HiveMiniCluster tests. -->
+      <jvmarg value="-da:org.apache.hadoop.hive.thrift.HadoopThriftAuthBridge" />
 
       <jvmarg value="${remoteDebugJvmArgs}"/>
 
@@ -847,6 +853,9 @@
       <sysproperty key="sqoop.test.postgresql.username"
                    value="${sqoop.test.postgresql.username}" />
 
+      <sysproperty key="sqoop.test.postgresql.password"
+                   value="${sqoop.test.postgresql.password}" />
+
       <sysproperty key="sqoop.test.postgresql.pg_bulkload"
                    value="${sqoop.test.postgresql.pg_bulkload}" />
 
@@ -859,12 +868,6 @@
       <sysproperty key="sqoop.test.msserver.connector.factory"
                    value="${sqoop.test.msserver.connector.factory}"/>
 
-      <sysproperty key="java.security.krb5.realm"
-                   value="${java.security.krb5.realm}"/>
-
-      <sysproperty key="java.security.krb5.kdc"
-                   value="${java.security.krb5.kdc}"/>
-
       <sysproperty key="sqoop.test.db2.connectstring.host_url" value="${sqoop.test.db2.connectstring.host_url}" />
       <sysproperty key="sqoop.test.db2.connectstring.database" value="${sqoop.test.db2.connectstring.database}" />
       <sysproperty key="sqoop.test.db2.connectstring.username" value="${sqoop.test.db2.connectstring.username}" />
@@ -876,6 +879,14 @@
       <sysproperty key="sqoop.test.netezza.password" value="${sqoop.test.netezza.password}" />
       <sysproperty key="sqoop.test.netezza.db.name" value="${sqoop.test.netezza.db.name}" />
       <sysproperty key="sqoop.test.netezza.table.name" value="${sqoop.test.netezza.table.name}" />
+
+      <sysproperty key="sqoop.test.mainframe.ftp.host" value="${sqoop.test.mainframe.ftp.host}" />
+      <sysproperty key="sqoop.test.mainframe.ftp.port" value="${sqoop.test.mainframe.ftp.port}" />
+      <sysproperty key="sqoop.test.mainframe.ftp.username" value="${sqoop.test.mainframe.ftp.username}" />
+      <sysproperty key="sqoop.test.mainframe.ftp.password" value="${sqoop.test.mainframe.ftp.password}" />
+      <sysproperty key="sqoop.test.mainframe.ftp.dataset.gdg" value="${sqoop.test.mainframe.ftp.dataset.gdg}" />
+      <sysproperty key="sqoop.test.mainframe.ftp.dataset.gdg.filename" value="${sqoop.test.mainframe.ftp.dataset.gdg.filename}" />
+      <sysproperty key="sqoop.test.mainframe.ftp.dataset.gdg.md5" value="${sqoop.test.mainframe.ftp.dataset.gdg.md5}" />
 
       <!-- Location of Hive logs -->
       <!--<sysproperty key="hive.log.dir"
@@ -1102,7 +1113,6 @@
       doctitle="${Name} ${version} API"
       bottom="Copyright &amp;copy; ${year} The Apache Software Foundation">
       <packageset dir="${src.dir}">
-        <include name="com/cloudera/sqoop/lib/**" />
         <include name="org/apache/sqoop/lib/**" />
       </packageset>
       <classpath>
@@ -1139,7 +1149,7 @@
     <mkdir dir="${findbugs.out.dir}"/>
     <findbugs home="${findbugs.home}" output="xml:withMessages"
         outputFile="${findbugs.output.xml.file}" effort="max"
-        excludeFilter="${findbugs.excludes}" jvmargs="-Xms512m -Xmx512m">
+        jvmargs="-Xms512m -Xmx512m">
       <auxClasspath>
         <path refid="test.classpath"/>
       </auxClasspath>
@@ -1398,7 +1408,7 @@
 
   <target name="report" depends="ivy-resolve-hadoop">
     <mkdir dir="build/report"/>
-    <ivy:report todir="build/report"/>
+    <ivy:report todir="build/report" xsl="false" />
   </target>
 
 </project>

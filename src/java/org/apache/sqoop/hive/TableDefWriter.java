@@ -20,7 +20,6 @@ package org.apache.sqoop.hive;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.Date;
 import java.util.List;
@@ -35,8 +34,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.sqoop.io.CodecMap;
 
-import com.cloudera.sqoop.SqoopOptions;
-import com.cloudera.sqoop.manager.ConnManager;
+import org.apache.sqoop.SqoopOptions;
+import org.apache.sqoop.manager.ConnManager;
 import org.apache.sqoop.util.FileSystemUtil;
 import org.apache.sqoop.util.SqlTypeMap;
 
@@ -80,17 +79,6 @@ public class TableDefWriter {
     this.commentsEnabled = withComments;
   }
 
-  private Map<String, Integer> externalColTypes;
-
-  /**
-   * Set the column type map to be used.
-   * (dependency injection for testing; not used in production.)
-   */
-  public void setColumnTypes(Map<String, Integer> colTypes) {
-    this.externalColTypes = colTypes;
-    LOG.debug("Using test-controlled type map");
-  }
-
   /**
    * Get the column names to import.
    */
@@ -98,14 +86,6 @@ public class TableDefWriter {
     String [] colNames = options.getColumns();
     if (null != colNames) {
       return colNames; // user-specified column names.
-    } else if (null != externalColTypes) {
-      // Test-injection column mapping. Extract the col names from this.
-      ArrayList<String> keyList = new ArrayList<String>();
-      for (String key : externalColTypes.keySet()) {
-        keyList.add(key);
-      }
-
-      return keyList.toArray(new String[keyList.size()]);
     } else if (null != inputTableName) {
       return connManager.getColumnNames(inputTableName);
     } else {
@@ -117,27 +97,15 @@ public class TableDefWriter {
    * @return the CREATE TABLE statement for the table to load into hive.
    */
   public String getCreateTableStmt() throws IOException {
+    resetConnManager();
     Map<String, List<Integer>> columnTypes;
     Properties userMapping = options.getMapColumnHive();
     Boolean isHiveExternalTableSet = !StringUtils.isBlank(options.getHiveExternalTableDir());
-    if (externalColTypes != null) {
-      columnTypes = new SqlTypeMap<String, List<Integer>>();
-      // Use pre-defined column types.
-      for(String key : externalColTypes.keySet()) {
-        List<Integer> info = new ArrayList<Integer>();
-        info.add(externalColTypes.get(key));
-        info.add(null);
-        info.add(null);
-        columnTypes.put(key, info);
-      }
-
+    // Get these from the database.
+    if (null != inputTableName) {
+      columnTypes = connManager.getColumnInfo(inputTableName);
     } else {
-      // Get these from the database.
-      if (null != inputTableName) {
-        columnTypes = connManager.getColumnInfo(inputTableName);
-      } else {
-        columnTypes = connManager.getColumnInfoForQuery(options.getSqlQuery());
-      }
+      columnTypes = connManager.getColumnInfoForQuery(options.getSqlQuery());
     }
 
     if(null == columnTypes) {
@@ -352,5 +320,38 @@ public class TableDefWriter {
     return String.format("\\%03o", charNum);
   }
 
+  /**
+   * The JDBC connection owned by the ConnManager has been most probably opened when the import was started
+   * so it might have timed out by the time TableDefWriter methods are invoked which happens at the end of import.
+   * The task of this method is to discard the current connection held by ConnManager to make sure
+   * that TableDefWriter will have a working one.
+   */
+  private void resetConnManager() {
+    this.connManager.discardConnection(true);
+  }
+
+  SqoopOptions getOptions() {
+    return options;
+  }
+
+  ConnManager getConnManager() {
+    return connManager;
+  }
+
+  Configuration getConfiguration() {
+    return configuration;
+  }
+
+  String getInputTableName() {
+    return inputTableName;
+  }
+
+  String getOutputTableName() {
+    return outputTableName;
+  }
+
+  boolean isCommentsEnabled() {
+    return commentsEnabled;
+  }
 }
 

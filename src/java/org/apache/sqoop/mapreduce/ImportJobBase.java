@@ -18,13 +18,12 @@
 
 package org.apache.sqoop.mapreduce;
 
-import com.cloudera.sqoop.SqoopOptions;
-import com.cloudera.sqoop.config.ConfigurationHelper;
-import com.cloudera.sqoop.io.CodecMap;
-import com.cloudera.sqoop.manager.ImportJobContext;
-import com.cloudera.sqoop.mapreduce.JobBase;
-import com.cloudera.sqoop.orm.TableClassName;
-import com.cloudera.sqoop.util.ImportException;
+import org.apache.sqoop.SqoopOptions;
+import org.apache.sqoop.config.ConfigurationHelper;
+import org.apache.sqoop.io.CodecMap;
+import org.apache.sqoop.manager.ImportJobContext;
+import org.apache.sqoop.orm.TableClassName;
+import org.apache.sqoop.util.ImportException;
 import org.apache.avro.file.DataFileConstants;
 import org.apache.avro.mapred.AvroJob;
 import org.apache.commons.logging.Log;
@@ -49,6 +48,8 @@ import org.apache.sqoop.validation.ValidationException;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Date;
+
+import static org.apache.sqoop.mapreduce.parquet.ParquetConstants.SQOOP_PARQUET_OUTPUT_CODEC_KEY;
 
 /**
  * Base class for running an import MapReduce job.
@@ -150,7 +151,8 @@ public class ImportJobBase extends JobBase {
           Configuration conf = job.getConfiguration();
           String shortName = CodecMap.getCodecShortNameByName(codecName, conf);
           if (!shortName.equalsIgnoreCase("default")) {
-            conf.set(ParquetJob.CONF_OUTPUT_CODEC, shortName);
+            conf.set(SQOOP_PARQUET_OUTPUT_CODEC_KEY, shortName);
+            options.getConf().set(SQOOP_PARQUET_OUTPUT_CODEC_KEY, shortName);
           }
         }
       }

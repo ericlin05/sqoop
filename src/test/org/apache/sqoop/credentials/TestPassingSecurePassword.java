@@ -18,9 +18,9 @@
 
 package org.apache.sqoop.credentials;
 
-import com.cloudera.sqoop.SqoopOptions;
-import com.cloudera.sqoop.testutil.BaseSqoopTestCase;
-import com.cloudera.sqoop.testutil.CommonArgs;
+import org.apache.sqoop.SqoopOptions;
+import org.apache.sqoop.testutil.BaseSqoopTestCase;
+import org.apache.sqoop.testutil.CommonArgs;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -28,12 +28,10 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.sqoop.mapreduce.db.DBConfiguration;
-import org.apache.sqoop.tool.BaseSqoopTool;
 import org.apache.sqoop.tool.ImportTool;
 import org.apache.sqoop.util.password.CredentialProviderHelper;
 import org.apache.sqoop.util.password.CredentialProviderPasswordLoader;
 import org.apache.sqoop.util.password.CryptoFileLoader;
-import org.apache.sqoop.util.password.PasswordLoader;
 import org.junit.Test;
 
 import javax.crypto.Cipher;
@@ -45,12 +43,12 @@ import javax.crypto.spec.SecretKeySpec;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Properties;
 
+import static org.apache.sqoop.SqoopOptions.DB_PASSWORD_KEY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -242,7 +240,7 @@ public class TestPassingSecurePassword extends BaseSqoopTestCase {
     // this is what is used to record password into the metastore
     Properties propertiesIntoMetastore = out.writeProperties();
 
-    assertNull(propertiesIntoMetastore.getProperty("db.password"));
+    assertNull(propertiesIntoMetastore.getProperty(DB_PASSWORD_KEY));
     // password-file should NOT be null as it'll be sued to retrieve password
     assertNotNull(propertiesIntoMetastore.getProperty("db.password.file"));
 
@@ -279,7 +277,7 @@ public class TestPassingSecurePassword extends BaseSqoopTestCase {
     // this is what is used to record password into the metastore
     Properties propertiesIntoMetastore = out.writeProperties();
 
-    assertNull(propertiesIntoMetastore.getProperty("db.password"));
+    assertNull(propertiesIntoMetastore.getProperty(DB_PASSWORD_KEY));
     assertNotNull(propertiesIntoMetastore.getProperty("db.password.file"));
 
     // load the saved properties and verify
@@ -312,7 +310,7 @@ public class TestPassingSecurePassword extends BaseSqoopTestCase {
     // this is what is used to record password into the metastore
     Properties propertiesIntoMetastore = out.writeProperties();
 
-    assertNotNull(propertiesIntoMetastore.getProperty("db.password"));
+    assertNotNull(propertiesIntoMetastore.getProperty(DB_PASSWORD_KEY));
     assertNull(propertiesIntoMetastore.getProperty("db.password.file"));
 
     // load the saved properties and verify

@@ -18,13 +18,15 @@
 
 package org.apache.sqoop.hbase;
 
-import com.cloudera.sqoop.hbase.PutTransformer;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.client.Delete;
+import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.util.StringUtils;
+import org.apache.sqoop.SqoopOptions;
 import org.apache.sqoop.mapreduce.ImportJobBase;
 
 import java.io.IOException;
@@ -56,6 +58,7 @@ public class ToStringPutTransformer extends PutTransformer {
   protected boolean addRowKey;
   private boolean isCompositeKey = false;
   private List<String> compositeKeyAttributes;
+  private SqoopOptions.HBaseNullIncrementalMode nullMode;
 
   /**
    * Used as delimiter to combine composite-key column names when passed as.
@@ -106,7 +109,7 @@ public class ToStringPutTransformer extends PutTransformer {
 
   @Override
   /** {@inheritDoc} */
-  public List<Put> getPutCommand(Map<String, Object> fields)
+  public List<Mutation> getMutationCommand(Map<String, Object> fields)
       throws IOException {
 
     String rowKeyCol = getRowKeyColumn();
@@ -140,7 +143,7 @@ public class ToStringPutTransformer extends PutTransformer {
       // from composite key
       String compositeRowKey = StringUtils.join(DELIMITER_HBASE, rowKeyList);
       // Insert record in HBase
-      return putRecordInHBase(fields, colFamily, compositeRowKey);
+      return mutationRecordInHBase(fields, colFamily, compositeRowKey);
 
     } else {
       // if row-key is regular primary key
@@ -154,23 +157,22 @@ public class ToStringPutTransformer extends PutTransformer {
       }
 
       String hBaseRowKey = toHBaseString(rowKey);
-      return putRecordInHBase(fields, colFamily, hBaseRowKey);
+      return mutationRecordInHBase(fields, colFamily, hBaseRowKey);
    }
  }
 
   /**
-   * Performs actual Put operation for the specified record in HBase.
+   * Performs actual Put/delete operation for the specified record in HBase.
    * @param record
    * @param colFamily
    * @param rowKey
-   * @return List containing a single put command
+   * @return List containing a put/delete command
    */
-  private List<Put> putRecordInHBase(Map<String, Object> record,
+  private List<Mutation> mutationRecordInHBase(Map<String, Object> record,
     String colFamily, String rowKey) {
-    // Put row-key in HBase
-    Put put = new Put(Bytes.toBytes(rowKey));
     byte[] colFamilyBytes = Bytes.toBytes(colFamily);
-
+    List<Mutation> mutationList = new ArrayList<Mutation>();
+    Put put = null;
     for (Map.Entry<String, Object> fieldEntry : record.entrySet()) {
       String colName = fieldEntry.getKey();
       boolean rowKeyCol = false;
@@ -187,17 +189,34 @@ public class ToStringPutTransformer extends PutTransformer {
         // check addRowKey flag before including rowKey field.
         Object val = fieldEntry.getValue();
         if (null != val) {
+          // Put row-key in HBase
+          if (put == null) {
+            put = new Put(Bytes.toBytes(rowKey));
+            mutationList.add(put);
+          }
           if ( val instanceof byte[]) {
-            put.add(colFamilyBytes, getFieldNameBytes(colName),
+            put.addColumn(colFamilyBytes, getFieldNameBytes(colName),
                 (byte[])val);
           } else {
-	          put.add(colFamilyBytes, getFieldNameBytes(colName),
+	          put.addColumn(colFamilyBytes, getFieldNameBytes(colName),
 	              Bytes.toBytes(toHBaseString(val)));
+          }
+          mutationList.add(put);
+        } else {
+          switch (nullMode) {
+          case Delete:
+            Delete delete = new Delete(Bytes.toBytes(rowKey));
+            delete.addColumns(colFamilyBytes, getFieldNameBytes(colName));
+            mutationList.add(delete);
+            break;
+          case Ignore:
+            // Do nothing
+            break;
           }
         }
       }
     }
-    return Collections.singletonList(put);
+    return Collections.unmodifiableList(mutationList);
   }
 
   private String toHBaseString(Object val) {
@@ -212,6 +231,7 @@ public class ToStringPutTransformer extends PutTransformer {
 
   @Override
   public void init(Configuration conf) {
+    nullMode = conf.getEnum(HBasePutProcessor.NULL_INCREMENTAL_MODE, SqoopOptions.HBaseNullIncrementalMode.Ignore);
     setColumnFamily(conf.get(COL_FAMILY_KEY, null));
     setRowKeyColumn(conf.get(ROW_KEY_COLUMN_KEY, null));
 

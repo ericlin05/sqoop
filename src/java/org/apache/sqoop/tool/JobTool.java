@@ -18,6 +18,10 @@
 
 package org.apache.sqoop.tool;
 
+import static org.apache.sqoop.metastore.GenericJobStorage.META_CONNECT_KEY;
+import static org.apache.sqoop.metastore.GenericJobStorage.META_PASSWORD_KEY;
+import static org.apache.sqoop.metastore.GenericJobStorage.META_USERNAME_KEY;
+
 import java.io.IOException;
 
 import java.util.Arrays;
@@ -35,19 +39,21 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.util.ToolRunner;
-import com.cloudera.sqoop.SqoopOptions;
-import com.cloudera.sqoop.SqoopOptions.InvalidOptionsException;
-import com.cloudera.sqoop.cli.ToolOptions;
-import com.cloudera.sqoop.metastore.hsqldb.HsqldbJobStorage;
-import com.cloudera.sqoop.metastore.JobData;
-import com.cloudera.sqoop.metastore.JobStorage;
-import com.cloudera.sqoop.metastore.JobStorageFactory;
+import org.apache.sqoop.SqoopOptions;
+import org.apache.sqoop.SqoopOptions.InvalidOptionsException;
+import org.apache.sqoop.cli.ToolOptions;
+import org.apache.sqoop.metastore.GenericJobStorage;
+import org.apache.sqoop.metastore.JobData;
+import org.apache.sqoop.metastore.JobStorage;
+import org.apache.sqoop.metastore.JobStorageFactory;
+import org.apache.sqoop.manager.JdbcDrivers;
+import org.apache.sqoop.metastore.PasswordRedactor;
 import org.apache.sqoop.util.LoggingUtils;
 
 /**
  * Tool that creates and executes saved jobs.
  */
-public class JobTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
+public class JobTool extends BaseSqoopTool {
 
   public static final Log LOG = LogFactory.getLog(
       JobTool.class.getName());
@@ -176,8 +182,7 @@ public class JobTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
 
     // Now that the tool is fully configured, materialize the job.
     //TODO(jarcec): Remove the cast when JobData will be moved to apache package
-    JobData jobData = new JobData(jobOptions,
-            (com.cloudera.sqoop.tool.SqoopTool)jobTool);
+    JobData jobData = new JobData(jobOptions, jobTool);
     this.storage.create(jobName, jobData);
     return 0; // Success.
   }
@@ -258,9 +263,9 @@ public class JobTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
 
     System.out.println("Options:");
     System.out.println("----------------------------");
-    Properties props = childOpts.writeProperties();
-    for (Map.Entry<Object, Object> entry : props.entrySet()) {
-      System.out.println(entry.getKey().toString() + " = " + entry.getValue());
+    Map<String, String> props = PasswordRedactor.redactValues(childOpts.writeProperties());
+    for (Map.Entry<String, String> entry : props.entrySet()) {
+      System.out.println(entry.getKey() + " = " + entry.getValue());
     }
 
     // TODO: This does not show entries in the Configuration
@@ -343,12 +348,7 @@ public class JobTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
       throw new InvalidOptionsException("");
     }
 
-    this.storageDescriptor = new TreeMap<String, String>();
-
-    if (in.hasOption(STORAGE_METASTORE_ARG)) {
-      this.storageDescriptor.put(HsqldbJobStorage.META_CONNECT_KEY,
-          in.getOptionValue(STORAGE_METASTORE_ARG));
-    }
+    applyMetastoreOptions(in, out);
 
     // These are generated via an option group; exactly one
     // of this exhaustive list will always be selected.
@@ -366,6 +366,28 @@ public class JobTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
     } else if (in.hasOption(JOB_CMD_SHOW_ARG)) {
       this.operation = JobOp.JobShow;
       this.jobName = in.getOptionValue(JOB_CMD_SHOW_ARG);
+    }
+
+    initializeStorageDescriptor(out);
+  }
+
+  private void initializeStorageDescriptor(SqoopOptions options) throws InvalidOptionsException {
+    storageDescriptor = new TreeMap<>();
+
+    storageDescriptor.put(META_CONNECT_KEY, options.getMetaConnectStr());
+    storageDescriptor.put(META_USERNAME_KEY, options.getMetaUsername());
+    storageDescriptor.put(META_PASSWORD_KEY, options.getMetaPassword());
+  }
+
+  private void applyMetastoreOptions(CommandLine in, SqoopOptions out) throws InvalidOptionsException {
+    if (in.hasOption(STORAGE_METASTORE_ARG)) {
+      out.setMetaConnectStr(in.getOptionValue(STORAGE_METASTORE_ARG));
+    }
+    if (in.hasOption(METASTORE_USER_ARG)) {
+      out.setMetaUsername(in.getOptionValue(METASTORE_USER_ARG));
+    }
+    if (in.hasOption(METASTORE_PASS_ARG)) {
+      out.setMetaPassword(in.getOptionValue(METASTORE_PASS_ARG));
     }
   }
 

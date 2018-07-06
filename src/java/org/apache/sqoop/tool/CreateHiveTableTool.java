@@ -26,22 +26,30 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.util.StringUtils;
 
-import com.cloudera.sqoop.SqoopOptions;
-import com.cloudera.sqoop.SqoopOptions.InvalidOptionsException;
-import com.cloudera.sqoop.cli.RelatedOptions;
-import com.cloudera.sqoop.cli.ToolOptions;
-import com.cloudera.sqoop.hive.HiveImport;
+import org.apache.sqoop.SqoopOptions;
+import org.apache.sqoop.SqoopOptions.InvalidOptionsException;
+import org.apache.sqoop.cli.RelatedOptions;
+import org.apache.sqoop.cli.ToolOptions;
+import org.apache.sqoop.hive.HiveClient;
+import org.apache.sqoop.hive.HiveClientFactory;
 
 /**
  * Tool that creates a Hive table definition.
  */
-public class CreateHiveTableTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
+public class CreateHiveTableTool extends BaseSqoopTool {
 
   public static final Log LOG = LogFactory.getLog(
       CreateHiveTableTool.class.getName());
 
-  public CreateHiveTableTool() {
+  private final HiveClientFactory hiveClientFactory;
+
+  public CreateHiveTableTool(HiveClientFactory hiveClientFactory) {
     super("create-hive-table");
+    this.hiveClientFactory = hiveClientFactory;
+  }
+
+  public CreateHiveTableTool() {
+    this(new HiveClientFactory());
   }
 
   @Override
@@ -52,10 +60,8 @@ public class CreateHiveTableTool extends com.cloudera.sqoop.tool.BaseSqoopTool {
     }
 
     try {
-      HiveImport hiveImport = new HiveImport(options, manager,
-          options.getConf(), false);
-      hiveImport.importTable(options.getTableName(),
-          options.getHiveTableName(), true);
+      HiveClient hiveClient = hiveClientFactory.createHiveClient(options, manager);
+      hiveClient.createTable();
     } catch (IOException ioe) {
       LOG.error("Encountered IOException running create table job: "
           + StringUtils.stringifyException(ioe));

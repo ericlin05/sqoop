@@ -18,7 +18,7 @@
 
 package org.apache.sqoop.tool;
 
-import com.cloudera.sqoop.SqoopOptions;
+import org.apache.sqoop.SqoopOptions;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sqoop.manager.SupportedManagers;
 import org.junit.Test;
@@ -64,6 +64,22 @@ public class TestExportToolValidateOptions {
   public void givenNoDirectOptionWhenNoDirectConnectorAvailableValidationPasses() throws SqoopOptions.InvalidOptionsException {
     SqoopOptions options = stubNotDirectOptions(SupportedManagers.HSQLDB);
     exportTool.vaildateDirectExportOptions(options);
+  }
+
+  @Test(expected = SqoopOptions.InvalidOptionsException.class)
+  public void givenDirectImportInputNullStringThrows() throws SqoopOptions.InvalidOptionsException {
+    SqoopOptions options = stubDirectOptions(SupportedManagers.MYSQL);
+    when(options.getInNullNonStringValue()).thenReturn("abc");
+
+    exportTool.validateDirectMysqlOptions(options);
+  }
+
+  @Test(expected = SqoopOptions.InvalidOptionsException.class)
+  public void givenDirectImportInputNullNonStringThrows() throws SqoopOptions.InvalidOptionsException {
+    SqoopOptions options = stubDirectOptions(SupportedManagers.MYSQL);
+    when(options.getInNullNonStringValue()).thenReturn("abc");
+
+    exportTool.validateDirectMysqlOptions(options);
   }
 
   private SqoopOptions stubDirectOptions(SupportedManagers supportedManagers) {

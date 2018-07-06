@@ -28,19 +28,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import org.apache.avro.LogicalType;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.sqoop.manager.OracleManager;
 
-import com.cloudera.sqoop.SqoopOptions;
-import com.cloudera.sqoop.manager.ExportJobContext;
-import com.cloudera.sqoop.manager.GenericJdbcManager;
-import com.cloudera.sqoop.manager.ImportJobContext;
-import com.cloudera.sqoop.mapreduce.JdbcExportJob;
-import com.cloudera.sqoop.mapreduce.JdbcUpdateExportJob;
-import com.cloudera.sqoop.util.ExportException;
-import com.cloudera.sqoop.util.ImportException;
+import org.apache.sqoop.SqoopOptions;
+import org.apache.sqoop.manager.ExportJobContext;
+import org.apache.sqoop.manager.GenericJdbcManager;
+import org.apache.sqoop.manager.ImportJobContext;
+import org.apache.sqoop.mapreduce.JdbcExportJob;
+import org.apache.sqoop.mapreduce.JdbcUpdateExportJob;
+import org.apache.sqoop.util.ExportException;
+import org.apache.sqoop.util.ImportException;
 
 /**
  * OraOop manager for high performance Oracle import / export.
@@ -320,7 +321,7 @@ public class OraOopConnManager extends GenericJdbcManager {
       throw ex;
     }
     JdbcExportJob exportJob =
-        new JdbcExportJob(context, null, null, oraOopOutputFormatClass);
+        new JdbcExportJob(context, null, null, oraOopOutputFormatClass, getParquetJobConfigurator().createParquetExportJobConfigurator());
     exportJob.runExport();
   }
 
@@ -342,7 +343,7 @@ public class OraOopConnManager extends GenericJdbcManager {
     }
 
     JdbcUpdateExportJob exportJob =
-        new JdbcUpdateExportJob(context, null, null, oraOopOutputFormatClass);
+        new JdbcUpdateExportJob(context, null, null, oraOopOutputFormatClass, getParquetJobConfigurator().createParquetExportJobConfigurator());
     exportJob.runExport();
   }
 
@@ -647,5 +648,11 @@ public class OraOopConnManager extends GenericJdbcManager {
    */
   public boolean isDirectModeAccumuloSupported() {
     return true;
+  }
+
+  @Override
+  public LogicalType toAvroLogicalType(int sqlType, Integer precision, Integer scale) {
+    Configuration conf = options.getConf();
+    return OracleUtils.toAvroLogicalType(sqlType, precision, scale, conf);
   }
 }

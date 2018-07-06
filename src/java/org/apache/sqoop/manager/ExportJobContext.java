@@ -21,7 +21,7 @@ package org.apache.sqoop.manager;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sqoop.util.Jars;
 
-import com.cloudera.sqoop.SqoopOptions;
+import org.apache.sqoop.SqoopOptions;
 
 /**
  * A set of parameters describing an export operation; this is passed to
@@ -33,6 +33,7 @@ public class ExportJobContext {
   private String jarFile;
   private SqoopOptions options;
   private ConnManager manager;
+  private Class outputFormatClass;
 
   public ExportJobContext(final String table, final String jar,
       final SqoopOptions opts) {
@@ -78,5 +79,12 @@ public class ExportJobContext {
     return this.manager;
   }
 
+  public Class getOutputFormatClass() {
+    return outputFormatClass;
+  }
+
+  public void setOutputFormatClass(Class outputFormatClass) {
+    this.outputFormatClass = outputFormatClass;
+  }
 }
 
