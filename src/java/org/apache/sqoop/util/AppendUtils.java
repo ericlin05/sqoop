@@ -59,6 +59,7 @@ public class AppendUtils {
 
     SqoopOptions options = context.getOptions();
     Path tempDir = context.getDestination();
+
     // Try in this order: target-dir or warehouse-dir
     Path userDestDir = null;
     if (options.getTargetDir() != null) {
@@ -170,6 +171,7 @@ public class AppendUtils {
     for (FileStatus fileStatus : sourceFiles) {
       String        sourceFilename = fileStatus.getPath().getName();
       StringBuilder destFilename   = new StringBuilder();
+
       if (fileStatus.isDir()) {    // move all subdirectories
         // pass target dir as initial dest to prevent nesting inside preexisting dir
         if (!fs.exists(targetDir) && fs.rename(fileStatus.getPath(), targetDir)) {
