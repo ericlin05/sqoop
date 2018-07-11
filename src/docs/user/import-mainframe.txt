@@ -181,6 +181,10 @@ The import process compiles the source into +.class+ and +.jar+ files;
 these are ordinarily stored under +/tmp+. You can select an alternate
 target directory with +\--bindir+. For example, +\--bindir /scratch+.
 
+Those generated Jar files are not deleted by default. To remove them
+after job finishes, you can add +\--delete-compile-dir+ parameter to
++sqoop+ command.
+
 If you already have a compiled class that can be used to perform the
 import and want to suppress the code-generation aspect of the import
 process, you can use an existing jar and class by
