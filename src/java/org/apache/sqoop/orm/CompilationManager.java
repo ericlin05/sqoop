@@ -247,8 +247,6 @@ public class CompilationManager {
       try {
         LOG.debug("moving file from " + fOrig.getAbsolutePath() + " to " + fDest.getAbsolutePath());
         FileUtils.moveFile(fOrig, fDest);
-        // SQOOP-3042 - need to clean the file on exit
-        fDest.deleteOnExit();
       } catch (IOException e) {
         /*Removed the exception being thrown
          *even if the .java file can not be renamed

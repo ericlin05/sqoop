@@ -51,6 +51,7 @@ import org.apache.sqoop.lib.LobSerializer;
 import org.apache.sqoop.lib.RecordParser;
 import org.apache.sqoop.lib.SqoopRecord;
 import org.apache.sqoop.manager.ConnManager;
+import org.apache.sqoop.util.DirCleanupHook;
 
 /**
  * Creates an ORM class to represent a table from a database.
@@ -1787,34 +1788,8 @@ public class ClassWriter {
 
     // SQOOP-3042 - Sqoop does not clear compile directory under /tmp/sqoop-<username>/compile
     // Add shutdown hook so that all files under the jar output dir can be cleared
-    // the directory itself has been added deleteOnExit, so we don't need to worry about it
     if(options.getDeleteJarOutputDir()) {
-      final String tmpDir = options.getJarOutputDir();
-      Runtime.getRuntime().addShutdownHook(new Thread() {
-        @Override
-        public void run() {
-          LOG.debug("Adding shutdown hook to remove source compilation files under " + tmpDir);
-
-          try {
-            File jarDir = new File(tmpDir);
-            File[] jarFiles = jarDir.listFiles();
-            if (jarFiles != null && jarFiles.length > 0) {
-              for (File f : jarFiles) {
-                if (f.isFile()) {
-                  if (f.delete()) {
-                    LOG.debug("Removing compiled file: " + f.getPath());
-                  } else {
-                    LOG.error("Unable to delete compiled file " + f.getPath());
-                  }
-                }
-              }
-            }
-          } catch (Exception x) {
-            // File permission problems are caught here.
-            LOG.error("Remove compiled files failed with exception: " + x.getMessage());
-          }
-        }
-      });
+      Runtime.getRuntime().addShutdownHook(new DirCleanupHook(options.getJarOutputDir()));
     }
 
     compileManager.addSourceFile(sourceFilename);
