@@ -328,7 +328,7 @@ public class TestAppendUtils extends ImportJobTestCase {
   public void testAppendWithMapreduceOutputBasename() throws IOException {
     String prefix = "prefix-test";
 
-    ArrayList args = new ArrayList();
+    ArrayList<String> args = new ArrayList<>();
     args.add("-D");
     args.add("mapreduce.output.basename=" + prefix);
     args.addAll(getOutputlessArgv(false, true, HsqldbTestServer.getFieldNames(), getConf()));
